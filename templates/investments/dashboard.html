@@ -1,0 +1,126 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Investimentos - FinanceFlow{% endblock %}
+{% block page_title %}Carteira de Investimentos{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'refresh_prices' %}" class="btn-ghost flex items-center gap-2 text-sm">
+  <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar cotações
+</a>
+<div class="flex items-center gap-2 glass rounded-xl px-3 py-1.5">
+  <a href="?view=personal" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'personal' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Pessoal</a>
+  <a href="?view=family" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'family' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Familiar</a>
+</div>
+<a href="{% url 'investment_create' %}" class="btn-primary flex items-center gap-2 text-sm">
+  <i data-lucide="plus" class="w-4 h-4"></i> Novo ativo
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+  <div class="glass rounded-2xl p-5">
+    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Patrimônio Total</p>
+    <p class="text-2xl font-bold text-white">R$ {{ total_current|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Total Investido</p>
+    <p class="text-2xl font-bold text-blue-400">R$ {{ total_invested|floatformat:2|intcomma }}</p>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Lucro/Prejuízo</p>
+    <p class="text-2xl font-bold {% if total_profit >= 0 %}text-green-400{% else %}text-red-400{% endif %}">R$ {{ total_profit|floatformat:2|intcomma }}</p>
+    <p class="text-xs {% if total_profit >= 0 %}text-green-400{% else %}text-red-400{% endif %}">{{ total_profit_pct|floatformat:2 }}%</p>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Proventos Totais</p>
+    <p class="text-2xl font-bold text-yellow-400">R$ {{ total_dividends|floatformat:2|intcomma }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Alocação da carteira</h3>
+    {% if allocation_list %}
+    <canvas id="allocationChart" height="180" class="mb-4"></canvas>
+    <div class="space-y-2">
+      {% for item in allocation_list %}
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{{ item.color }}"></div>
+          <span class="text-xs" style="color:rgba(241,245,249,0.7)">{{ item.name }}</span>
+        </div>
+        <span class="text-xs text-white">{{ item.pct }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-400">Sem ativos.</p>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-green-400 mb-4">Maiores altas</h3>
+    <div class="space-y-2">
+      {% for inv in top_gainers %}
+      <a href="{% url 'investment_detail' inv.pk %}" class="block p-2 rounded-xl hover:bg-white/5">
+        <p class="text-sm text-white">{{ inv.ticker|default:inv.name }}</p>
+        <p class="text-xs text-green-400">+{{ inv.profit_loss_pct|floatformat:1 }}%</p>
+      </a>
+      {% empty %}<p class="text-xs text-slate-400">Sem dados.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-red-400 mb-4">Maiores baixas</h3>
+    <div class="space-y-2">
+      {% for inv in top_losers %}
+      <a href="{% url 'investment_detail' inv.pk %}" class="block p-2 rounded-xl hover:bg-white/5">
+        <p class="text-sm text-white">{{ inv.ticker|default:inv.name }}</p>
+        <p class="text-xs text-red-400">{{ inv.profit_loss_pct|floatformat:1 }}%</p>
+      </a>
+      {% empty %}<p class="text-xs text-slate-400">Sem dados.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="glass rounded-2xl p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-semibold text-white">Todas as posições</h3>
+    <a href="{% url 'investment_list' %}" class="text-xs text-purple-400">Ver todas</a>
+  </div>
+  <div class="space-y-2">
+    {% for inv in investments|slice:":10" %}
+    <a href="{% url 'investment_detail' inv.pk %}" class="block p-3 rounded-xl hover:bg-white/5">
+      <div class="flex justify-between">
+        <span class="text-white">{{ inv.ticker|default:inv.name }}</span>
+        <span class="{% if inv.profit_loss >= 0 %}text-green-400{% else %}text-red-400{% endif %}">{{ inv.profit_loss_pct|floatformat:2 }}%</span>
+      </div>
+      <div class="text-xs text-slate-400">R$ {{ inv.current_value|floatformat:2|intcomma }}</div>
+    </a>
+    {% empty %}
+    <p class="text-sm text-slate-400">Nenhum ativo cadastrado.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const allocationData = {{ allocation_json|safe }};
+if (allocationData.length > 0) {
+  new Chart(document.getElementById('allocationChart'), {
+    type: 'doughnut',
+    data: {
+      labels: allocationData.map(d => d.name),
+      datasets: [{
+        data: allocationData.map(d => d.value),
+        backgroundColor: allocationData.map(d => d.color + 'cc'),
+        borderColor: allocationData.map(d => d.color),
+        borderWidth: 1,
+      }]
+    },
+    options: { responsive: true, cutout: '65%', plugins: { legend: { display: false } } }
+  });
+}
+</script>
+{% endblock %}

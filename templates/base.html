@@ -92,6 +92,9 @@
         <a href="{% url 'card_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'card' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
           <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i> Cartões
         </a>
+        <a href="{% url 'portfolio_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'investment' in url_name or 'portfolio' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+          <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i> Investimentos
+        </a>
         <a href="{% url 'budget_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'budget' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
           <i data-lucide="target" class="w-4 h-4 shrink-0"></i> Orçamentos
         </a>

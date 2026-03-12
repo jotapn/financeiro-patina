@@ -1,0 +1,55 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Investimentos - Lista{% endblock %}
+{% block page_title %}Investimentos{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'investment_create' %}" class="btn-primary">Novo ativo</a>
+{% endblock %}
+{% block content %}
+<div class="glass rounded-2xl p-5 mb-4">
+  <form method="get" class="flex gap-2">
+    <select class="input-glass" name="type">
+      <option value="">Todos os tipos</option>
+      {% for ac in asset_classes %}<option value="{{ ac.asset_type }}" {% if current_type == ac.asset_type %}selected{% endif %}>{{ ac.name }}</option>{% endfor %}
+    </select>
+    <button class="btn-primary" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<div class="glass rounded-2xl p-5">
+  <div class="space-y-2">
+    {% for inv in investments %}
+    <a href="{% url 'investment_detail' inv.pk %}" class="block p-3 rounded-xl hover:bg-white/5">
+      <div class="flex justify-between"><span class="text-white">{{ inv.ticker|default:inv.name }}</span><span>R$ {{ inv.current_value|floatformat:2|intcomma }}</span></div>
+      <div class="text-xs text-slate-400">{{ inv.asset_class.name|default:'Sem classe' }}</div>
+    </a>
+    {% empty %}
+    <p class="text-sm text-slate-400">Nenhum investimento encontrado.</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% if show_modal %}
+<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
+  <div class="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">Novo Ativo</h2>
+      <a href="{% url 'investment_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
+    </div>
+    <form method="post" action="{% url 'investment_create' %}" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-xs mb-1 text-slate-300">{{ field.label }}</label>
+        <div class="[&>input]:input-glass [&>select]:input-glass [&>textarea]:input-glass">{{ field }}</div>
+      </div>
+      {% endfor %}
+      <div class="flex gap-3">
+        <a href="{% url 'investment_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
+        <button type="submit" class="btn-primary flex-1">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
