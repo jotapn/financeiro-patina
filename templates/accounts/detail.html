@@ -1,0 +1,24 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Detalhe da Conta - FinanceFlow{% endblock %}
+{% block page_title %}{{ account.name }}{% endblock %}
+{% block content %}
+<div class="glass rounded-2xl p-5 mb-4">
+  <p class="text-sm text-slate-400">Saldo atual</p>
+  <p class="text-3xl font-bold {% if account.current_balance >= 0 %}text-green-400{% else %}text-red-400{% endif %}">R$ {{ account.current_balance|floatformat:2|intcomma }}</p>
+</div>
+<div class="glass rounded-2xl p-5">
+  <h3 class="font-semibold mb-3">Últimas transações</h3>
+  <div class="space-y-2">
+    {% for tx in transactions %}
+      <div class="p-3 rounded-xl bg-white/5 flex justify-between">
+        <span>{{ tx.description }} <small class="text-slate-400">({{ tx.date|date:'d/m' }})</small></span>
+        <span>R$ {{ tx.amount|floatformat:2|intcomma }}</span>
+      </div>
+    {% empty %}
+      <p class="text-sm text-slate-400">Sem transações.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,70 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Transações - FinanceFlow{% endblock %}
+{% block page_title %}Transações{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'transaction_create' %}" class="btn-primary">Nova transação</a>
+{% endblock %}
+{% block content %}
+<div class="glass rounded-2xl p-5 mb-4">
+  <form method="get" class="grid md:grid-cols-5 gap-3">
+    <input class="input-glass" type="text" name="q" placeholder="Buscar" value="{{ filters.q|default:'' }}">
+    <select class="input-glass" name="period">
+      <option value="current_month" {% if filters.period == 'current_month' %}selected{% endif %}>Mês atual</option>
+      <option value="last_month" {% if filters.period == 'last_month' %}selected{% endif %}>Mês anterior</option>
+      <option value="current_year" {% if filters.period == 'current_year' %}selected{% endif %}>Ano atual</option>
+    </select>
+    <select class="input-glass" name="type">
+      <option value="">Todos tipos</option>
+      <option value="income" {% if filters.type == 'income' %}selected{% endif %}>Receita</option>
+      <option value="expense" {% if filters.type == 'expense' %}selected{% endif %}>Despesa</option>
+      <option value="transfer" {% if filters.type == 'transfer' %}selected{% endif %}>Transferência</option>
+    </select>
+    <select class="input-glass" name="category">
+      <option value="">Todas categorias</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}" {% if filters.category == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn-primary" type="submit">Filtrar</button>
+  </form>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4 mb-4">
+  <div class="glass rounded-xl p-4">Receitas: <span class="text-green-400 font-semibold">R$ {{ totals.income|default:0|floatformat:2|intcomma }}</span></div>
+  <div class="glass rounded-xl p-4">Despesas: <span class="text-red-400 font-semibold">R$ {{ totals.expense|default:0|floatformat:2|intcomma }}</span></div>
+  <div class="glass rounded-xl p-4">Saldo: <span class="text-purple-300 font-semibold">R$ {{ totals.income|default:0|add:totals.expense|default:0 }}</span></div>
+</div>
+
+<div class="glass rounded-2xl p-5 overflow-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-slate-400 border-b border-white/10">
+        <th class="py-2">Data</th><th class="py-2">Descrição</th><th class="py-2">Categoria</th><th class="py-2">Valor</th><th class="py-2">Status</th><th class="py-2">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tx in transactions %}
+        {% include 'transactions/partials/transaction_row.html' with tx=tx %}
+      {% empty %}
+        <tr><td colspan="6" class="py-6 text-center text-slate-400">Sem transações no filtro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="glass rounded-2xl p-5 mt-4">
+  <h3 class="font-semibold mb-4">Criar/editar transação</h3>
+  <form method="post" enctype="multipart/form-data" action="{% if editing %}{% url 'transaction_edit' editing.pk %}{% else %}{% url 'transaction_create' %}{% endif %}" class="grid md:grid-cols-2 gap-3">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
+        <label class="text-xs text-slate-300">{{ field.label }}</label>
+        {{ field }}
+      </div>
+    {% endfor %}
+    <div class="md:col-span-2"><button class="btn-primary" type="submit">Salvar transação</button></div>
+  </form>
+</div>
+{% endblock %}
+

@@ -1,0 +1,18 @@
+﻿{% load humanize %}
+<tr class="border-b border-white/10" id="tx-{{ tx.pk }}">
+  <td class="py-2">{{ tx.date|date:"d/m/Y" }}</td>
+  <td class="py-2">{{ tx.description }}</td>
+  <td class="py-2">{{ tx.category.name }}</td>
+  <td class="py-2 {% if tx.transaction_type == 'income' %}text-green-400{% elif tx.transaction_type == 'expense' %}text-red-400{% endif %}">
+    {% if tx.transaction_type == 'income' %}+{% elif tx.transaction_type == 'expense' %}-{% endif %}R$ {{ tx.amount|floatformat:2|intcomma }}
+  </td>
+  <td class="py-2">{{ tx.get_status_display }}</td>
+  <td class="py-2">
+    <div class="flex gap-2">
+      <a href="{% url 'transaction_edit' tx.pk %}" class="text-blue-300 text-xs">Editar</a>
+      <form method="post" action="{% url 'toggle_status' tx.pk %}">{% csrf_token %}<button class="text-xs text-purple-300" type="submit">Alternar</button></form>
+      <form method="post" action="{% url 'transaction_delete' tx.pk %}">{% csrf_token %}<button class="text-xs text-red-300" type="submit">Excluir</button></form>
+    </div>
+  </td>
+</tr>
+
