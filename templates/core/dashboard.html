@@ -1,0 +1,196 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard - FinanceFlow{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}{{ today|date:"l, d \d\e F \d\e Y" }}{% endblock %}
+
+{% block topbar_actions %}
+<div class="flex items-center gap-2 glass rounded-xl px-3 py-1.5">
+  <a href="?view=personal" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'personal' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Pessoal</a>
+  <a href="?view=family" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'family' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Familiar</a>
+</div>
+<a href="{% url 'transaction_create' %}" class="btn-primary flex items-center gap-2 text-sm">
+  <i data-lucide="plus" class="w-4 h-4"></i> Nova transação
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+  <div class="glass rounded-2xl p-5 glass-hover transition-all">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium" style="color:rgba(241,245,249,0.5)">Saldo Total</span>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(59,130,246,0.15)">
+        <i data-lucide="wallet" class="w-4 h-4 text-blue-400"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-white">R$ {{ total_balance|floatformat:2|intcomma }}</p>
+    <p class="text-xs mt-1" style="color:rgba(241,245,249,0.4)">{{ accounts|length }} conta{{ accounts|length|pluralize }}</p>
+  </div>
+
+  <div class="glass rounded-2xl p-5 glass-hover transition-all">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium" style="color:rgba(241,245,249,0.5)">Receitas do Mês</span>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.15)">
+        <i data-lucide="arrow-down-circle" class="w-4 h-4 text-green-400"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-green-400">R$ {{ monthly_income|floatformat:2|intcomma }}</p>
+  </div>
+
+  <div class="glass rounded-2xl p-5 glass-hover transition-all">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium" style="color:rgba(241,245,249,0.5)">Despesas do Mês</span>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(239,68,68,0.15)">
+        <i data-lucide="arrow-up-circle" class="w-4 h-4 text-red-400"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-red-400">R$ {{ monthly_expense|floatformat:2|intcomma }}</p>
+  </div>
+
+  <div class="glass rounded-2xl p-5 glass-hover transition-all">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium" style="color:rgba(241,245,249,0.5)">Economia do Mês</span>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(124,58,237,0.15)">
+        <i data-lucide="piggy-bank" class="w-4 h-4 text-purple-400"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold {% if monthly_savings >= 0 %}text-purple-400{% else %}text-red-400{% endif %}">
+      R$ {{ monthly_savings|floatformat:2|intcomma }}
+    </p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+  <div class="xl:col-span-2 glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Fluxo dos últimos 6 meses</h3>
+    <canvas id="flowChart" height="120"></canvas>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-4">Gastos por categoria</h3>
+    {% if category_data %}
+      <canvas id="categoryChart" height="180"></canvas>
+    {% else %}
+      <div class="flex flex-col items-center justify-center h-40" style="color:rgba(241,245,249,0.3)">
+        <i data-lucide="pie-chart" class="w-8 h-8 mb-2"></i>
+        <p class="text-xs">Sem dados este mês</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+  <div class="xl:col-span-2 glass rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-white">Últimas transações</h3>
+      <a href="{% url 'transaction_list' %}" class="text-xs text-purple-400 hover:text-purple-300">Ver todas</a>
+    </div>
+    <div class="space-y-2">
+      {% for tx in recent_transactions %}
+      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-white/5">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:{{ tx.category.color }}20">
+          <i data-lucide="{{ tx.category.icon }}" class="w-4 h-4" style="color:{{ tx.category.color }}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-white truncate font-medium">{{ tx.description }}</p>
+          <p class="text-xs" style="color:rgba(241,245,249,0.4)">{{ tx.category.name }} · {{ tx.date|date:"d/m" }}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-sm font-semibold {% if tx.transaction_type == 'income' %}text-green-400{% else %}text-red-400{% endif %}">
+            {% if tx.transaction_type == 'income' %}+{% elif tx.transaction_type == 'expense' %}-{% else %}{% endif %}R$ {{ tx.amount|floatformat:2|intcomma }}
+          </p>
+          <span class="text-xs {% if tx.status == 'paid' %}badge-green{% else %}badge-blue{% endif %}">
+            {{ tx.get_status_display }}
+          </span>
+        </div>
+      </div>
+      {% empty %}
+      <div class="flex flex-col items-center justify-center py-10" style="color:rgba(241,245,249,0.3)">
+        <i data-lucide="inbox" class="w-10 h-10 mb-3"></i>
+        <p class="text-sm">Nenhuma transação ainda</p>
+        <a href="{% url 'transaction_create' %}" class="mt-3 btn-primary text-sm">Adicionar primeira transação</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-white">Contas</h3>
+      <a href="{% url 'account_list' %}" class="text-xs text-purple-400 hover:text-purple-300">Gerenciar</a>
+    </div>
+    <div class="space-y-3">
+      {% for account in accounts %}
+      <a href="{% url 'account_detail' account.pk %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-white/5 block">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:{{ account.color }}20">
+          <i data-lucide="building-2" class="w-4 h-4" style="color:{{ account.color }}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white truncate">{{ account.name }}</p>
+          <p class="text-xs" style="color:rgba(241,245,249,0.4)">{{ account.get_account_type_display }}</p>
+        </div>
+        <p class="text-sm font-semibold shrink-0 {% if account.current_balance >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+          R$ {{ account.current_balance|floatformat:2|intcomma }}
+        </p>
+      </a>
+      {% empty %}
+      <div class="flex flex-col items-center justify-center py-8" style="color:rgba(241,245,249,0.3)">
+        <i data-lucide="wallet" class="w-8 h-8 mb-2"></i>
+        <p class="text-xs">Sem contas</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const chartData = {{ chart_data|safe }};
+const categoryData = {{ category_data|safe }};
+
+new Chart(document.getElementById('flowChart'), {
+  type: 'bar',
+  data: {
+    labels: chartData.map(d => d.month),
+    datasets: [
+      { label: 'Receitas', data: chartData.map(d => d.income), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 6, borderSkipped: false },
+      { label: 'Despesas', data: chartData.map(d => d.expense), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6, borderSkipped: false }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: 'rgba(241,245,249,0.6)', font: { size: 11 } } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(241,245,249,0.5)', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(241,245,249,0.5)', font: { size: 11 }, callback: v => 'R$ ' + Number(v).toLocaleString('pt-BR') } }
+    }
+  }
+});
+
+if (categoryData.length > 0) {
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: categoryData.map(d => d.category__name),
+      datasets: [{
+        data: categoryData.map(d => d.total),
+        backgroundColor: categoryData.map(d => d.category__color + 'cc'),
+        borderColor: categoryData.map(d => d.category__color),
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true, cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: 'rgba(241,245,249,0.6)', font: { size: 10 }, padding: 10, boxWidth: 10 }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,26 @@
+﻿{% extends 'base_auth.html' %}
+{% block title %}Entrar - FinanceFlow{% endblock %}
+{% block content %}
+<h2 class="text-xl font-bold text-white mb-6 text-center">Bem-vindo de volta</h2>
+{% if messages %}
+  {% for message in messages %}
+    <div class="mb-4 px-4 py-3 rounded-xl text-sm border border-red-500/30 text-red-400">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  <div>
+    <label>E-mail</label>
+    <input type="email" name="email" class="input-glass" placeholder="seu@email.com" autocomplete="email" required>
+  </div>
+  <div>
+    <label>Senha</label>
+    <input type="password" name="password" class="input-glass" placeholder="********" autocomplete="current-password" required>
+  </div>
+  <button type="submit" class="btn-primary mt-2">Entrar</button>
+</form>
+<p class="text-center mt-6 text-sm" style="color:rgba(241,245,249,0.5)">
+  Não tem conta? <a href="{% url 'register' %}" style="color:#a78bfa;font-weight:500">Cadastre-se</a>
+</p>
+{% endblock %}
+

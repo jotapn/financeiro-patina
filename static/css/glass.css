@@ -1,0 +1,13 @@
+﻿/* Extra glass utilities */
+.input-glass,
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #f1f5f9;
+  padding: 0.6rem 0.9rem;
+  width: 100%;
+}
+

@@ -1,0 +1,163 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Orçamentos - FinanceFlow{% endblock %}
+{% block page_title %}Orçamentos e Metas{% endblock %}
+{% block page_subtitle %}{{ ref_month|date:"F \d\e Y" }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'budget_clone' %}" class="btn-ghost flex items-center gap-2 text-sm">
+  <i data-lucide="copy" class="w-4 h-4"></i> Copiar mês anterior
+</a>
+<a href="{% url 'budget_create' %}" class="btn-primary flex items-center gap-2 text-sm">
+  <i data-lucide="plus" class="w-4 h-4"></i> Novo orçamento
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div>
+    <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+      <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i> Orçamentos do mês
+    </h3>
+    <div class="space-y-3">
+      {% for b in budgets %}
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:{{ b.category.color }}20">
+            <i data-lucide="{{ b.category.icon }}" class="w-4 h-4" style="color:{{ b.category.color }}"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-white">{{ b.category.name }}</p>
+            <p class="text-xs" style="color:rgba(241,245,249,0.4)">{{ b.get_scope_display }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold {% if b.is_over_budget %}text-red-400{% else %}text-white{% endif %}">
+              R$ {{ b.spent_amount|floatformat:2|intcomma }}
+            </p>
+            <p class="text-xs" style="color:rgba(241,245,249,0.4)">de R$ {{ b.amount|floatformat:2|intcomma }}</p>
+          </div>
+        </div>
+        <div class="w-full rounded-full h-2" style="background:rgba(255,255,255,0.08)">
+          <div class="h-2 rounded-full transition-all"
+               style="width:{{ b.percentage_used }}%; background:{{ b.status_color }}"></div>
+        </div>
+        <div class="flex justify-between mt-2">
+          <span class="text-xs" style="color:rgba(241,245,249,0.4)">{{ b.percentage_used }}% utilizado</span>
+          <span class="text-xs {% if b.is_over_budget %}text-red-400{% else %}text-green-400{% endif %}">
+            {% if b.is_over_budget %}Excedeu{% else %}Sobra R$ {{ b.remaining|floatformat:2|intcomma }}{% endif %}
+          </span>
+        </div>
+      </div>
+      {% empty %}
+      <div class="glass rounded-2xl p-8 flex flex-col items-center justify-center" style="color:rgba(241,245,249,0.3)">
+        <i data-lucide="sliders" class="w-10 h-10 mb-3"></i>
+        <p class="text-sm">Nenhum orçamento este mês</p>
+        <a href="{% url 'budget_create' %}" class="mt-3 text-xs text-purple-400">+ Criar orçamento</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+        <i data-lucide="target" class="w-4 h-4 text-blue-400"></i> Metas financeiras
+      </h3>
+      <a href="{% url 'goal_create' %}" class="text-xs text-purple-400 hover:text-purple-300">+ Nova meta</a>
+    </div>
+    <div class="space-y-3">
+      {% for goal in goals %}
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:{{ goal.color }}20">
+            <i data-lucide="{{ goal.icon }}" class="w-5 h-5" style="color:{{ goal.color }}"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate">{{ goal.name }}</p>
+            <p class="text-xs" style="color:rgba(241,245,249,0.4)">
+              {{ goal.get_goal_type_display }} · Vence {{ goal.target_date|date:"d/m/Y" }}
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-bold text-white">{{ goal.percentage_complete }}%</p>
+          </div>
+        </div>
+        <div class="w-full rounded-full h-2 mb-2" style="background:rgba(255,255,255,0.08)">
+          <div class="h-2 rounded-full transition-all" style="width:{{ goal.percentage_complete }}%; background:{{ goal.color }}"></div>
+        </div>
+        <div class="flex justify-between items-center gap-2">
+          <div>
+            <p class="text-xs" style="color:rgba(241,245,249,0.4)">
+              R$ {{ goal.current_amount|floatformat:2|intcomma }} de R$ {{ goal.target_amount|floatformat:2|intcomma }}
+            </p>
+            <p class="text-xs mt-0.5" style="color:rgba(241,245,249,0.3)">
+              Aporte sugerido: R$ {{ goal.suggested_monthly|floatformat:2|intcomma }}/mês · {{ goal.months_remaining }} meses restantes
+            </p>
+          </div>
+          <form method="post" action="{% url 'goal_contribute' goal.pk %}" class="flex gap-2 items-center">
+            {% csrf_token %}
+            <input name="amount" type="number" step="0.01" placeholder="R$ 0,00" class="input-glass text-xs w-24 py-1.5">
+            <input name="date" type="hidden" value="{% now 'Y-m-d' %}">
+            <button type="submit" class="btn-primary text-xs py-1.5 px-3">Aportar</button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div class="glass rounded-2xl p-8 flex flex-col items-center justify-center" style="color:rgba(241,245,249,0.3)">
+        <i data-lucide="target" class="w-10 h-10 mb-3"></i>
+        <p class="text-sm">Nenhuma meta ativa</p>
+        <a href="{% url 'goal_create' %}" class="mt-3 text-xs text-purple-400">+ Criar meta</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% if show_modal %}
+<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
+  <div class="glass rounded-2xl p-6 w-full max-w-md mx-4">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">Novo Orçamento</h2>
+      <a href="{% url 'budget_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
+    </div>
+    <form method="post" action="{% url 'budget_create' %}" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-xs mb-1" style="color:rgba(241,245,249,0.5)">{{ field.label }}</label>
+        <div class="[&>input]:input-glass [&>select]:input-glass">{{ field }}</div>
+      </div>
+      {% endfor %}
+      <div class="flex gap-3 pt-2">
+        <a href="{% url 'budget_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
+        <button type="submit" class="btn-primary flex-1">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if show_goal_modal %}
+<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
+  <div class="glass rounded-2xl p-6 w-full max-w-md mx-4">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">Nova Meta</h2>
+      <a href="{% url 'budget_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
+    </div>
+    <form method="post" action="{% url 'goal_create' %}" class="space-y-4">
+      {% csrf_token %}
+      {% for field in goal_form %}
+      <div>
+        <label class="block text-xs mb-1" style="color:rgba(241,245,249,0.5)">{{ field.label }}</label>
+        <div class="[&>input]:input-glass [&>select]:input-glass">{{ field }}</div>
+      </div>
+      {% endfor %}
+      <div class="flex gap-3 pt-2">
+        <a href="{% url 'budget_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
+        <button type="submit" class="btn-primary flex-1">Salvar meta</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

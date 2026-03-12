@@ -1,0 +1,37 @@
+﻿{% extends 'base.html' %}
+{% block title %}Família - FinanceFlow{% endblock %}
+{% block page_title %}Grupo familiar{% endblock %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-4">
+  <div class="glass rounded-2xl p-5">
+    <h3 class="font-semibold mb-4">Membros</h3>
+    <div class="space-y-2">
+      {% for m in members %}
+        <div class="p-3 rounded-xl bg-white/5 flex items-center justify-between">
+          <span>{{ m.user.get_full_name|default:m.user.email }}</span>
+          <span class="text-xs badge-purple">{{ m.get_role_display }}</span>
+        </div>
+      {% empty %}
+        <p class="text-sm text-slate-400">Nenhum membro encontrado.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <h3 class="font-semibold mb-4">Convidar membro</h3>
+    <form method="post" action="{% url 'invite_member' %}" class="space-y-3">
+      {% csrf_token %}
+      {{ invite_form.email }}
+      <button class="btn-primary" type="submit">Enviar convite</button>
+    </form>
+    <h4 class="font-medium mt-6 mb-3">Convites pendentes</h4>
+    <div class="space-y-2">
+      {% for inv in invitations %}
+        <div class="text-sm p-3 rounded-xl bg-white/5">{{ inv.email }} · expira em {{ inv.expires_at|date:"d/m H:i" }}</div>
+      {% empty %}
+        <p class="text-sm text-slate-400">Sem convites pendentes.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

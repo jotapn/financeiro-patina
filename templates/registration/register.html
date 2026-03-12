@@ -1,0 +1,40 @@
+﻿{% extends 'base_auth.html' %}
+{% block title %}Cadastro - FinanceFlow{% endblock %}
+{% block content %}
+<h2 class="text-xl font-bold text-white mb-6 text-center">Criar conta</h2>
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label>Nome</label>
+      <input type="text" name="first_name" class="input-glass" placeholder="João" required>
+    </div>
+    <div>
+      <label>Sobrenome</label>
+      <input type="text" name="last_name" class="input-glass" placeholder="Silva" required>
+    </div>
+  </div>
+  <div>
+    <label>E-mail</label>
+    <input type="email" name="email" class="input-glass" placeholder="seu@email.com" required>
+  </div>
+  <div>
+    <label>Senha</label>
+    <input type="password" name="password1" class="input-glass" placeholder="Mínimo 8 caracteres" required>
+  </div>
+  <div>
+    <label>Confirmar senha</label>
+    <input type="password" name="password2" class="input-glass" placeholder="Repita a senha" required>
+  </div>
+  {% if form.errors %}
+    <div class="px-4 py-3 rounded-xl text-sm border border-red-500/30 text-red-400">
+      {% for field, errors in form.errors.items %}{% for e in errors %}{{ e }} {% endfor %}{% endfor %}
+    </div>
+  {% endif %}
+  <button type="submit" class="btn-primary mt-2">Criar minha conta</button>
+</form>
+<p class="text-center mt-6 text-sm" style="color:rgba(241,245,249,0.5)">
+  Já tem conta? <a href="{% url 'login' %}" style="color:#a78bfa;font-weight:500">Entrar</a>
+</p>
+{% endblock %}
+

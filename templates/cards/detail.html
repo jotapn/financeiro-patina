@@ -1,0 +1,104 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ card.name }} - FinanceFlow{% endblock %}
+{% block page_title %}{{ card.name }}{% endblock %}
+{% block page_subtitle %}****{{ card.last_four_digits }} · {{ card.get_brand_display }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="space-y-2">
+    <p class="text-xs font-medium mb-3" style="color:rgba(241,245,249,0.5)">FATURAS</p>
+    {% for inv in invoices %}
+    <a href="?invoice={{ inv.pk }}"
+       class="flex items-center justify-between px-4 py-3 rounded-xl transition-all glass-hover {% if selected_invoice and selected_invoice.pk == inv.pk %}glass border-purple-500/40{% else %}hover:bg-white/5{% endif %}">
+      <div>
+        <p class="text-sm font-medium text-white">{{ inv.reference_month|date:"M/Y" }}</p>
+        <span class="text-xs {% if inv.status == 'paid' %}text-green-400{% elif inv.status == 'overdue' %}text-red-400{% elif inv.status == 'open' %}text-blue-400{% else %}text-slate-400{% endif %}">
+          {{ inv.get_status_display }}
+        </span>
+      </div>
+      <p class="text-sm font-semibold text-white">R$ {{ inv.total_amount|floatformat:2|intcomma }}</p>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="lg:col-span-2">
+    {% if selected_invoice %}
+    <div class="glass rounded-2xl p-5 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-white">Fatura {{ selected_invoice.reference_month|date:"M/Y" }}</h3>
+          <p class="text-sm" style="color:rgba(241,245,249,0.5)">
+            Fecha {{ selected_invoice.closing_date|date:"d/m" }} · Vence {{ selected_invoice.due_date|date:"d/m" }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold text-white">R$ {{ selected_invoice.total_amount|floatformat:2|intcomma }}</p>
+          {% if selected_invoice.status == 'open' %}
+          <a href="{% url 'pay_invoice' selected_invoice.pk %}" class="btn-primary text-xs mt-2 inline-block">Pagar fatura</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="glass rounded-xl p-3">
+          <p class="text-xs mb-1" style="color:rgba(241,245,249,0.4)">Pago</p>
+          <p class="font-semibold text-green-400">R$ {{ selected_invoice.paid_amount|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="glass rounded-xl p-3">
+          <p class="text-xs mb-1" style="color:rgba(241,245,249,0.4)">Mínimo</p>
+          <p class="font-semibold text-yellow-400">R$ {{ selected_invoice.minimum_payment|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="glass rounded-xl p-3">
+          <p class="text-xs mb-1" style="color:rgba(241,245,249,0.4)">Vence em</p>
+          <p class="font-semibold {% if selected_invoice.days_until_due <= 3 %}text-red-400{% else %}text-blue-400{% endif %}">
+            {% if selected_invoice.days_until_due < 0 %}Vencida{% elif selected_invoice.days_until_due == 0 %}Hoje{% else %}{{ selected_invoice.days_until_due }} dias{% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-5 mb-4">
+      <h4 class="text-sm font-semibold text-white mb-4">Adicionar compra no cartão</h4>
+      <form method="post" action="{% url 'add_card_transaction' card.pk %}" class="grid grid-cols-1 md:grid-cols-5 gap-2">
+        {% csrf_token %}
+        <input class="input-glass md:col-span-2" name="description" placeholder="Descrição" required>
+        <input class="input-glass" name="amount" type="number" step="0.01" placeholder="Valor" required>
+        <input class="input-glass" name="date" type="date" value="{% now 'Y-m-d' %}" required>
+        <select class="input-glass" name="category" required>
+          <option value="">Categoria</option>
+          {% for c in expense_categories %}
+          <option value="{{ c.pk }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        <input class="input-glass" name="installment_total" type="number" min="1" value="1" placeholder="Parcelas">
+        <input type="hidden" name="transaction_type" value="expense">
+        <button class="btn-primary md:col-span-1" type="submit">Lançar</button>
+      </form>
+    </div>
+
+    <div class="glass rounded-2xl p-5">
+      <h4 class="text-sm font-semibold text-white mb-4">Lançamentos ({{ invoice_transactions|length }})</h4>
+      <div class="space-y-2">
+        {% for tx in invoice_transactions %}
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:{{ tx.category.color }}20">
+            <i data-lucide="{{ tx.category.icon }}" class="w-4 h-4" style="color:{{ tx.category.color }}"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-white truncate">{{ tx.description }}</p>
+            <p class="text-xs" style="color:rgba(241,245,249,0.4)">
+              {{ tx.date|date:"d/m" }}
+              {% if tx.installment_total %}· {{ tx.installment_number }}/{{ tx.installment_total }}{% endif %}
+            </p>
+          </div>
+          <p class="text-sm font-semibold text-red-400 shrink-0">-R$ {{ tx.amount|floatformat:2|intcomma }}</p>
+        </div>
+        {% empty %}
+        <p class="text-center text-sm py-6" style="color:rgba(241,245,249,0.3)">Nenhum lançamento nesta fatura</p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

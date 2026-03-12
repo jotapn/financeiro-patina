@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FinanceFlow{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: #080618;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.2) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.18) 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      color: #f1f5f9;
+    }
+    .glass {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 20px;
+    }
+    .input-glass {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; color: #f1f5f9; padding: 0.7rem 1rem;
+      font-size: 0.875rem; width: 100%; outline: none; transition: all 0.2s;
+    }
+    .input-glass:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.09); }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: white; border: none; border-radius: 12px;
+      padding: 0.8rem 1.5rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; font-size: 0.9rem; width: 100%;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
+    label { display: block; font-size: 0.8rem; color: rgba(241,245,249,0.6); margin-bottom: 0.4rem; }
+  </style>
+</head>
+<body>
+  <div class="w-full max-w-md px-4">
+    <div class="text-center mb-8">
+      <div class="inline-flex w-14 h-14 rounded-2xl items-center justify-center mb-4" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white">FinanceFlow</h1>
+      <p style="color:rgba(241,245,249,0.5);font-size:0.875rem">Controle financeiro familiar</p>
+    </div>
+    <div class="glass p-8">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>
+

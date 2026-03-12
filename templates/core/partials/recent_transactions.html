@@ -1,0 +1,8 @@
+﻿<div class="space-y-2">
+  {% for tx in recent_transactions %}
+  <div class="p-3 rounded-xl bg-white/5 flex justify-between">
+    <span>{{ tx.description }}</span><span>R$ {{ tx.amount }}</span>
+  </div>
+  {% endfor %}
+</div>
+

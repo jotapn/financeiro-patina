@@ -1,0 +1,55 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Contas - FinanceFlow{% endblock %}
+{% block page_title %}Contas financeiras{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'account_create' %}" class="btn-primary">Nova conta</a>
+{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-4 mb-6">
+  <div class="glass rounded-2xl p-5 lg:col-span-2">
+    <h3 class="font-semibold mb-4">Minhas contas</h3>
+    <div id="accounts-grid" class="grid md:grid-cols-2 gap-3">
+      {% for account in accounts %}
+        {% include 'accounts/partials/account_card.html' with account=account %}
+      {% empty %}
+        <p class="text-slate-400 text-sm">Nenhuma conta cadastrada.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <h3 class="font-semibold mb-4">Saldo total</h3>
+    <p class="text-3xl font-bold">R$ {{ total_balance|floatformat:2|intcomma }}</p>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-4">
+  <div class="glass rounded-2xl p-5">
+    <h3 class="font-semibold mb-4">Criar/editar conta</h3>
+    <form method="post" action="{% if editing %}{% url 'account_edit' editing.pk %}{% else %}{% url 'account_create' %}{% endif %}" class="space-y-3">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label class="text-xs text-slate-300">{{ field.label }}</label>
+          {{ field }}
+        </div>
+      {% endfor %}
+      <button class="btn-primary" type="submit">Salvar conta</button>
+    </form>
+  </div>
+  <div class="glass rounded-2xl p-5">
+    <h3 class="font-semibold mb-4">Transferência entre contas</h3>
+    <form method="post" action="{% url 'transfer' %}" class="space-y-3">
+      {% csrf_token %}
+      {% for field in transfer_form %}
+        <div>
+          <label class="text-xs text-slate-300">{{ field.label }}</label>
+          {{ field }}
+        </div>
+      {% endfor %}
+      <button class="btn-primary" type="submit">Transferir</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
