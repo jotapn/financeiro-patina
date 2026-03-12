@@ -1,34 +1,30 @@
-﻿# CONTEXTO - FinanceFlow (Fase 2)
+﻿# CONTEXTO - FinanceFlow (Fase 3)
 
 ## 1) Models criados/atualizados (campos principais)
 
 ### apps.core
-- `User`: `email` (único), `username`, `first_name`, `last_name`, `is_active`.
-- `FamilyGroup`: `name`, `invite_code`, `created_at`.
-- `UserProfile`: `user`, `family_group`, `role`, `avatar`, `default_currency`, `timezone`, `financial_month_start_day`, `monthly_income`, preferências de notificação.
-- `FamilyInvitation`: `family_group`, `email`, `token`, `invited_by`, `accepted`, `created_at`, `expires_at`.
+- `User`, `FamilyGroup`, `UserProfile`, `FamilyInvitation`.
 
 ### apps.accounts
-- `FinancialAccount`: `owner`, `family_group`, `ownership`, `name`, `account_type`, `bank`, `initial_balance`, `color`, `include_in_total`, `is_active`.
-- `PaymentMethod`: `family_group`, `name`, `method_type`, `is_default`, `is_active`.
+- `FinancialAccount`, `PaymentMethod`.
 
 ### apps.transactions
-- `Tag`, `RecurrenceRule`, `Transaction` (com suporte a `credit_card`, `invoice`, `installment_number`, `installment_total`, `parent_transaction`).
+- `Tag`, `RecurrenceRule`, `Transaction`.
 
 ### apps.cards
-- `CreditCard`: dados do cartão, limite, fechamento/vencimento, conta de débito, cores e ownership.
-- `CardInvoice`: `card`, `reference_month`, `closing_date`, `due_date`, `total_amount`, `paid_amount`, `status`, `payment_date`, **`payment_transaction`**.
+- `CreditCard`, `CardInvoice` (com `payment_transaction`).
 
 ### apps.categories
 - `Category`, `Subcategory`.
 
 ### apps.budgets
-- `Budget`: `family_group`, `owner`, `category`, `amount`, `period`, `scope`, `reference_month`, `rollover`, `alert_threshold` (com propriedades de consumo/progresso).
-- `FinancialGoal`: tipo/escopo da meta, valor alvo/atual, data alvo, conta vinculada, aporte mensal, progresso.
-- `GoalContribution`: `goal`, `amount`, `date`, `notes`, `transaction`.
+- `Budget`, `FinancialGoal`, `GoalContribution`.
 
-### apps.investments
-- `Investment`: `family_group`, `name`, `amount`, `created_at`.
+### apps.investments (Fase 3)
+- `AssetClass`: classe/tipo de ativo, cor, ícone, liquidez, tributação.
+- `Investment`: ativo com preço médio/atual, quantidade, rentabilidade, renda fixa, cache de valores e recálculo.
+- `InvestmentTransaction`: compra, venda, dividendos, JCP, rendimento, split/grupamento.
+- `InvestmentGoal`: metas de investimento por ativo ou classe.
 
 ### apps.ai_assistant
 - `AiAssistantLog`.
@@ -50,89 +46,66 @@
 - `/categories/` + `apps.categories.urls`
 - `/budgets/` + `apps.budgets.urls`
 - `/reports/` + `apps.reports.urls`
+- `/investments/` + `apps.investments.urls`
 
-### apps.core.urls
-- `/` (`dashboard`)
-- `/auth/register/` (`register`)
-- `/auth/login/` (`login`)
-- `/auth/logout/` (`logout`)
-- `/profile/` (`profile`)
-- `/family/` (`family`)
-- `/family/invite/` (`invite_member`)
-- `/family/accept/<uuid:token>/` (`accept_invite`)
-
-### apps.accounts.urls
-- `/accounts/`
-- `/accounts/create/`
-- `/accounts/<int:pk>/`
-- `/accounts/<int:pk>/edit/`
-- `/accounts/<int:pk>/delete/`
-- `/accounts/transfer/`
-
-### apps.transactions.urls
-- `/transactions/`
-- `/transactions/create/`
-- `/transactions/<int:pk>/edit/`
-- `/transactions/<int:pk>/delete/`
-- `/transactions/<int:pk>/toggle-status/`
-
-### apps.cards.urls
-- `/cards/` (`card_list`)
-- `/cards/create/` (`card_create`)
-- `/cards/<int:pk>/` (`card_detail`)
-- `/cards/<int:pk>/pay/` (`pay_invoice`)
-- `/cards/<int:card_pk>/add-transaction/` (`add_card_transaction`)
-
-### apps.categories.urls
-- `/categories/` (`category_list`)
-- `/categories/ensure-transfer/` (`ensure_transfer_category`)
-
-### apps.budgets.urls
-- `/budgets/` (`budget_list`)
-- `/budgets/create/` (`budget_create`)
-- `/budgets/clone/` (`budget_clone`)
-- `/budgets/goals/create/` (`goal_create`)
-- `/budgets/goals/<int:pk>/contribute/` (`goal_contribute`)
-
-### apps.reports.urls
-- `/reports/` (`reports_home`)
+### apps.investments.urls
+- `/investments/` (`portfolio_dashboard`)
+- `/investments/list/` (`investment_list`)
+- `/investments/create/` (`investment_create`)
+- `/investments/<int:pk>/` (`investment_detail`)
+- `/investments/<int:pk>/add-transaction/` (`investment_add_transaction`)
+- `/investments/goals/create/` (`investment_goal_create`)
+- `/investments/refresh/` (`refresh_prices`)
 
 ---
 
 ## 3) Decisões técnicas importantes
 
-- `DATABASE_URL` ganhou prioridade no settings para suportar Supabase diretamente, com SSL.
-- Cards Fase 2:
-  - geração automática de faturas futuras;
-  - pagamento parcial/total com vínculo da transação de pagamento em `CardInvoice.payment_transaction`;
-  - distribuição de parcelamento em faturas futuras.
-- Orçamentos e metas:
-  - cálculo de gasto por categoria no mês;
-  - progresso (%), saldo restante e alerta visual;
-  - clonagem do mês anterior e aportes em metas.
-- Relatórios:
-  - fluxo de 12 meses (receita/despesa);
-  - top categorias do ano;
-  - pizza mensal por categoria.
-- Sidebar atualizada com links reais de Cartões, Orçamentos e Relatórios.
+- Fase 3 adicionou carteira de investimentos com múltiplas classes de ativos.
+- Recálculo automático de posição e preço médio em `InvestmentTransaction.save()`.
+- Dashboard de portfólio com KPI, alocação, top gainers/losers e metas de investimento.
+- Atualização manual e automática de cotações preparada com Celery tasks.
+- Link de Investimentos ativado na sidebar e integração completa de rotas.
 
 ---
 
-## 4) Lógica de parcelamento implementada
+## 4) APIs externas integradas
 
-- Ao lançar despesa no cartão (`add_card_transaction`), o sistema define automaticamente a fatura com base em data + dia de fechamento.
-- Se `installment_total > 1`:
-  - a transação mãe vira parcela `1/N` com valor parcelado;
-  - parcelas `2..N` são criadas como transações filhas com `status='scheduled'` nas faturas dos meses seguintes;
-  - total de cada fatura é recalculado após criação.
+- `brapi.dev` para cotações de ações/FII/ETF/BDR (`update_stock_prices`).
+- `CoinGecko` para cotações de cripto (`update_crypto_prices`).
+- `Banco Central (BCB SGS 12)` para CDI diário (`update_fixed_income_returns`).
 
 ---
 
-## 5) O que falta para a Fase 3 (Investimentos)
+## 5) Celery tasks configuradas
 
-- Fluxo completo de investimentos: aportes, resgates, proventos e custo médio.
-- Integração de posições por ativo/classe e carteira consolidada.
-- Rentabilidade histórica (mensal/acumulada) e comparação com benchmark.
-- Metas de alocação e rebalanceamento sugerido.
-- Importação de extratos/notas e conciliação automática para investimentos.
-- Relatórios específicos de patrimônio, risco e evolução da carteira.
+### `apps.investments.tasks`
+- `update_stock_prices` (B3 via brapi)
+- `update_crypto_prices` (CoinGecko)
+- `update_fixed_income_returns` (CDI/BCB para renda fixa)
+- `setup_investment_schedules` (cria/agenda PeriodicTasks no Celery Beat)
+
+Schedules configurados:
+- B3: a cada 15 min em dias úteis (9h-18h)
+- Cripto: a cada 5 min
+- Renda fixa: 1x por dia útil às 18:30
+
+---
+
+## 6) Comandos executados na Fase 3
+
+- `python manage.py makemigrations investments --noinput`
+- `python manage.py migrate`
+- `python manage.py seed_asset_classes`
+- `python manage.py shell -c "from apps.investments.tasks import setup_investment_schedules; setup_investment_schedules()"`
+- `python manage.py check`
+
+---
+
+## 7) O que falta para a Fase 4 (IA + notificações + exportações)
+
+- Assistente IA com insights financeiros personalizados (chat e recomendações acionáveis).
+- Motor de notificações inteligentes (limites, vencimentos, anomalias, metas e portfolio alerts).
+- Exportação de dados e relatórios (CSV, XLSX, PDF) por módulo e período.
+- Consolidação de automações (rotinas, monitoramento, retry strategy e observabilidade).
+- Camada de permissões/políticas mais avançada para operação familiar compartilhada.

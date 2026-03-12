@@ -1,0 +1,44 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ investment.name }} - FinanceFlow{% endblock %}
+{% block page_title %}{{ investment.name }}{% endblock %}
+{% block page_subtitle %}{{ investment.asset_class.name }} · {{ investment.institution }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="glass rounded-2xl p-4"><p class="text-xs text-slate-400">Valor atual</p><p class="text-xl font-bold">R$ {{ investment.current_value|floatformat:2|intcomma }}</p></div>
+  <div class="glass rounded-2xl p-4"><p class="text-xs text-slate-400">Total investido</p><p class="text-xl font-bold text-blue-400">R$ {{ investment.total_invested|floatformat:2|intcomma }}</p></div>
+  <div class="glass rounded-2xl p-4"><p class="text-xs text-slate-400">Lucro/Prejuízo</p><p class="text-xl font-bold {% if investment.profit_loss >= 0 %}text-green-400{% else %}text-red-400{% endif %}">R$ {{ investment.profit_loss|floatformat:2|intcomma }}</p></div>
+  <div class="glass rounded-2xl p-4"><p class="text-xs text-slate-400">Proventos</p><p class="text-xl font-bold text-yellow-400">R$ {{ investment.total_dividends|floatformat:2|intcomma }}</p></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-3">Registrar operação</h3>
+    <form method="post" action="{% url 'investment_add_transaction' investment.pk %}" class="space-y-3">
+      {% csrf_token %}
+      {% for field in tx_form %}
+      <div>
+        <label class="block text-xs mb-1 text-slate-300">{{ field.label }}</label>
+        <div class="[&>input]:input-glass [&>select]:input-glass [&>textarea]:input-glass">{{ field }}</div>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary w-full">Registrar</button>
+    </form>
+  </div>
+
+  <div class="glass rounded-2xl p-5">
+    <h3 class="text-sm font-semibold text-white mb-3">Histórico</h3>
+    <div class="space-y-2 max-h-96 overflow-y-auto">
+      {% for tx in transactions %}
+      <div class="p-3 rounded-xl hover:bg-white/5">
+        <div class="flex justify-between text-sm"><span>{{ tx.get_transaction_type_display }}</span><span>R$ {{ tx.amount|floatformat:2|intcomma }}</span></div>
+        <div class="text-xs text-slate-400">{{ tx.date|date:"d/m/Y" }}</div>
+      </div>
+      {% empty %}
+      <p class="text-sm text-slate-400">Nenhuma operação.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
