@@ -35,6 +35,13 @@ services:
     volumes:
       - redis_data:/data
 
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+
   celery:
     build: .
     command: celery -A config worker -l info
@@ -59,4 +66,5 @@ volumes:
   postgres_data:
   redis_data:
   media_files:
+  ollama_models:
 

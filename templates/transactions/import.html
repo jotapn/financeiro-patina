@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Importar Extrato{% endblock %}
+{% block page_title %}Importação de Extrato CSV{% endblock %}
+{% block page_subtitle %}Upload, detecção automática e preview antes de salvar{% endblock %}
+{% block content %}
+<div class="grid xl:grid-cols-[360px_1fr] gap-6">
+  <section class="glass rounded-3xl p-5">
+    <h2 class="text-lg font-semibold text-white mb-4">Etapa 1 · Upload</h2>
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="csv-file" class="block text-xs text-slate-300 mb-1">Arquivo CSV</label>
+        <input id="csv-file" type="file" name="csv_file" accept=".csv,text/csv" class="input-glass" required>
+      </div>
+      <div>
+        <label for="bank-type" class="block text-xs text-slate-300 mb-1">Tipo detectado/forçado</label>
+        <select id="bank-type" name="bank_type" class="input-glass">
+          <option value="">Detectar automaticamente</option>
+          <option value="nubank">Nubank</option>
+          <option value="inter">Inter</option>
+          <option value="bradesco">Bradesco</option>
+          <option value="generic">Genérico</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-primary w-full">Analisar arquivo</button>
+    </form>
+  </section>
+
+  <section class="glass rounded-3xl p-5">
+    {% if preview_rows %}
+    <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
+      <div>
+        <h2 class="text-lg font-semibold text-white">Etapa 2 · Preview</h2>
+        <p class="text-sm text-slate-400">Banco detectado: {{ detected_bank|default:"generic"|upper }} · {{ all_rows_count }} linhas · {{ duplicates_count }} duplicatas</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="bank_type" value="{{ detected_bank }}">
+        <input type="hidden" name="confirm" value="1">
+        <button type="submit" class="btn-primary">Confirmar importação</button>
+      </form>
+    </div>
+    <div class="overflow-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-slate-400 border-b border-white/10">
+            <th class="py-2">Data</th>
+            <th class="py-2">Descrição</th>
+            <th class="py-2">Tipo</th>
+            <th class="py-2 text-right">Valor</th>
+            <th class="py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview_rows %}
+          <tr class="border-b border-white/5">
+            <td class="py-3">{{ row.date|date:"d/m/Y" }}</td>
+            <td class="py-3 text-white">{{ row.description }}</td>
+            <td class="py-3">{{ row.transaction_type }}</td>
+            <td class="py-3 text-right">R$ {{ row.amount|floatformat:2|intcomma }}</td>
+            <td class="py-3">{% if row.is_duplicate %}<span class="badge-red">Duplicata</span>{% else %}<span class="badge-green">Nova</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state min-h-[360px]">
+      <svg width="84" height="84" viewBox="0 0 120 120" fill="none" aria-hidden="true"><rect x="20" y="18" width="80" height="84" rx="16" stroke="rgba(255,255,255,.16)"/><path d="M41 48h38M41 62h38M41 76h24" stroke="rgba(241,245,249,.78)" stroke-width="6" stroke-linecap="round"/></svg>
+      <h3>Nenhum arquivo processado</h3>
+      <p>Envie um CSV de banco para validar o formato, revisar duplicatas e importar com segurança.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

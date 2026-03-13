@@ -7,10 +7,23 @@ from apps.accounts.models import FinancialAccount, PaymentMethod
 from apps.cards.models import CreditCard
 from apps.categories.models import Category
 
-from .models import Transaction
+from .models import RecurrenceRule, Transaction
 
 
 class TransactionForm(forms.ModelForm):
+    recurrence_frequency = forms.ChoiceField(
+        choices=[('', 'Sem recorrência')] + RecurrenceRule.FREQUENCY_CHOICES,
+        required=False,
+        label='Recorrência',
+    )
+    recurrence_interval = forms.IntegerField(required=False, min_value=1, initial=1, label='Intervalo')
+    recurrence_end_date = forms.DateField(
+        required=False,
+        label='Fim da recorrência',
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+    )
+    recurrence_max_occurrences = forms.IntegerField(required=False, min_value=1, label='Máximo de ocorrências')
+
     class Meta:
         model = Transaction
         fields = [
@@ -57,4 +70,11 @@ class TransactionForm(forms.ModelForm):
         required = {'description', 'amount', 'transaction_type', 'date', 'category'}
         for name, field in self.fields.items():
             field.required = name in required
+
+        if self.instance and self.instance.recurrence_rule_id:
+            rule = self.instance.recurrence_rule
+            self.fields['recurrence_frequency'].initial = rule.frequency
+            self.fields['recurrence_interval'].initial = rule.interval
+            self.fields['recurrence_end_date'].initial = rule.end_date
+            self.fields['recurrence_max_occurrences'].initial = rule.max_occurrences
 

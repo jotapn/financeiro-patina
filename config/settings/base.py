@@ -132,6 +132,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_TIMEZONE = 'America/Sao_Paulo'
 
 AUTH_USER_MODEL = 'core.User'
+OLLAMA_BASE_URL = config('OLLAMA_BASE_URL', default='http://ollama:11434')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

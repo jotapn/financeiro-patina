@@ -11,7 +11,7 @@
     <div class="flex gap-2">
       <a href="{% url 'transaction_edit' tx.pk %}" class="text-blue-300 text-xs">Editar</a>
       <form method="post" action="{% url 'toggle_status' tx.pk %}">{% csrf_token %}<button class="text-xs text-purple-300" type="submit">Alternar</button></form>
-      <form method="post" action="{% url 'transaction_delete' tx.pk %}">{% csrf_token %}<button class="text-xs text-red-300" type="submit">Excluir</button></form>
+      <form method="post" action="{% url 'transaction_delete' tx.pk %}" data-confirm="Excluir esta transação permanentemente?">{% csrf_token %}<button class="text-xs text-red-300" type="submit">Excluir</button></form>
     </div>
   </td>
 </tr>

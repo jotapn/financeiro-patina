@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}FinanceFlow AI{% endblock %}
+{% block page_title %}Assistente Financeiro{% endblock %}
+{% block page_subtitle %}Pergunte sobre gastos, orçamento, faturas e investimentos{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'ai_create_session' %}" class="btn-primary text-sm">Nova conversa</a>
+{% if current_session %}
+<a href="{% url 'ai_export_session_pdf' current_session.pk %}" class="btn-ghost text-sm">Exportar PDF</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-[280px_1fr] gap-6" x-data="aiChatPage({ sessionId: '{{ current_session.pk|default:"" }}' })">
+  <aside class="glass rounded-2xl p-4 h-[72vh] overflow-y-auto scrollbar-thin">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-white">Sessões</h2>
+      <a href="{% url 'ai_create_session' %}" class="text-xs text-purple-400">+ Nova</a>
+    </div>
+    <div id="ai-session-list">
+      {% include 'ai_assistant/partials/session_list.html' with sessions=sessions %}
+    </div>
+  </aside>
+
+  <section class="glass rounded-3xl p-4 md:p-6 h-[72vh] flex flex-col overflow-hidden">
+    <div class="flex-1 overflow-y-auto scrollbar-thin space-y-4 pr-1" x-ref="messages">
+      {% if current_session %}
+        {% for message in current_session.messages.all %}
+        <div class="flex {% if message.role == 'user' %}justify-end{% else %}justify-start{% endif %}">
+          <article class="max-w-[85%] rounded-2xl px-4 py-3 {% if message.role == 'user' %}bg-gradient-to-br from-purple-600 to-blue-500 text-white{% else %}glass text-slate-100{% endif %}">
+            {% if message.role == 'assistant' %}
+            <div class="prose prose-invert prose-sm max-w-none" x-html="renderMarkdown('{{ message.content|escapejs }}')"></div>
+            <button type="button" class="mt-3 text-xs text-slate-300 hover:text-white" @click="copyText('{{ message.content|escapejs }}')">Copiar</button>
+            {% else %}
+            <p class="whitespace-pre-wrap">{{ message.content }}</p>
+            {% endif %}
+          </article>
+        </div>
+        {% empty %}
+        <div class="empty-state min-h-[45vh]">
+          <svg width="80" height="80" viewBox="0 0 120 120" fill="none" aria-hidden="true"><circle cx="60" cy="60" r="58" stroke="rgba(255,255,255,.12)"/><path d="M39 46c0-8.837 7.163-16 16-16h10c8.837 0 16 7.163 16 16v8c0 8.837-7.163 16-16 16H55c-8.837 0-16-7.163-16-16v-8Z" fill="rgba(124,58,237,.18)" stroke="rgba(124,58,237,.45)"/><path d="M48 79h24" stroke="rgba(241,245,249,.7)" stroke-width="4" stroke-linecap="round"/><path d="M53 53h14M53 60h10" stroke="rgba(241,245,249,.82)" stroke-width="4" stroke-linecap="round"/></svg>
+          <h3>Comece uma conversa</h3>
+          <p>Pergunte sobre gastos do mês, faturas próximas, orçamento ou carteira.</p>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="empty-state min-h-[45vh]">
+        <svg width="80" height="80" viewBox="0 0 120 120" fill="none" aria-hidden="true"><circle cx="60" cy="60" r="58" stroke="rgba(255,255,255,.12)"/><path d="M39 46c0-8.837 7.163-16 16-16h10c8.837 0 16 7.163 16 16v8c0 8.837-7.163 16-16 16H55c-8.837 0-16-7.163-16-16v-8Z" fill="rgba(124,58,237,.18)" stroke="rgba(124,58,237,.45)"/><path d="M48 79h24" stroke="rgba(241,245,249,.7)" stroke-width="4" stroke-linecap="round"/><path d="M53 53h14M53 60h10" stroke="rgba(241,245,249,.82)" stroke-width="4" stroke-linecap="round"/></svg>
+        <h3>Nenhuma sessão ainda</h3>
+        <p>Crie uma nova conversa para usar o FinanceFlow AI.</p>
+      </div>
+      {% endif %}
+      <template x-if="typing">
+        <div class="flex justify-start"><div class="glass rounded-2xl px-4 py-3 text-sm text-slate-300 typing-indicator">digitando<span></span><span></span><span></span></div></div>
+      </template>
+    </div>
+
+    <div class="mt-4 border-t border-white/10 pt-4">
+      <form class="space-y-3" @submit.prevent="send()">
+        <label for="ai-message" class="sr-only">Mensagem para o assistente</label>
+        <textarea id="ai-message" x-model="message" rows="3" class="input-glass" placeholder="Pergunte algo como: Como está meu orçamento este mês?"></textarea>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button type="button" class="chip" @click="message='Quanto gastei este mês?'">Quanto gastei este mês?</button>
+          <button type="button" class="chip" @click="message='Como está meu orçamento?'">Como está meu orçamento?</button>
+          <button type="button" class="chip" @click="message='Quais são as próximas faturas?'">Próximas faturas?</button>
+          <button type="button" class="chip" @click="message='Como está minha carteira hoje?'">Minha carteira hoje</button>
+          <button type="button" class="chip" @click="message='Onde posso economizar?'">Onde posso economizar?</button>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs text-slate-400">Modelo: {{ active_model.model }} · {{ active_model.status }}</p>
+          <button type="submit" class="btn-primary" aria-label="Enviar mensagem">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}

@@ -1,155 +1,294 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}FinanceFlow{% endblock %}</title>
+  <meta name="description" content="FinanceFlow: controle financeiro familiar com contas, cartões, investimentos e assistente IA.">
+  <meta property="og:title" content="FinanceFlow">
+  <meta property="og:description" content="Controle financeiro familiar com IA, investimentos e automações.">
+  <meta property="og:type" content="website">
+  {% load static %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  {% load static %}
   <link rel="stylesheet" href="{% static 'css/glass.css' %}">
   <style>
     * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    :root {
+      --bg: #080618;
+      --text: #f1f5f9;
+      --muted: rgba(241,245,249,.56);
+      --panel: rgba(255,255,255,.06);
+      --panel-strong: rgba(255,255,255,.1);
+      --border: rgba(255,255,255,.12);
+      --focus: rgba(96,165,250,.85);
+      --danger: #ef4444;
+      --success: #10b981;
+      --info: #3b82f6;
+    }
     body {
-      background: #080618;
+      background: var(--bg);
       background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.18) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.15) 0%, transparent 50%);
+        radial-gradient(circle at 15% 15%, rgba(124,58,237,.2), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(59,130,246,.16), transparent 28%),
+        radial-gradient(circle at 85% 80%, rgba(16,185,129,.08), transparent 22%);
       min-height: 100vh;
-      color: #f1f5f9;
+      color: var(--text);
+    }
+    a, button, input, select, textarea { outline: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      box-shadow: 0 0 0 3px var(--focus);
+      border-radius: 12px;
     }
     .glass {
-      background: rgba(255,255,255,0.06);
+      background: var(--panel);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
     }
-    .glass-hover:hover {
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(124,58,237,0.35);
-      transform: translateY(-2px);
-    }
+    .glass-hover:hover { background: var(--panel-strong); border-color: rgba(124,58,237,.35); transform: translateY(-2px); }
     .btn-primary {
       background: linear-gradient(135deg, #7c3aed, #3b82f6);
-      color: white; border: none; border-radius: 10px;
-      padding: 0.6rem 1.2rem; font-weight: 500; cursor: pointer;
-      transition: all 0.2s; font-size: 0.875rem;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: .7rem 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-size: .875rem;
     }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+    .btn-primary:hover { opacity: .95; transform: translateY(-1px); box-shadow: 0 10px 24px rgba(124,58,237,.35); }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: .7rem 1.1rem;
+      font-weight: 600;
+    }
     .btn-ghost {
-      background: rgba(255,255,255,0.06); color: rgba(241,245,249,0.7);
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
-      padding: 0.6rem 1.2rem; font-weight: 500; cursor: pointer;
-      transition: all 0.2s; font-size: 0.875rem;
+      background: rgba(255,255,255,.05);
+      color: rgba(241,245,249,.82);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .7rem 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      font-size: .875rem;
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.10); color: #f1f5f9; }
+    .btn-ghost:hover { background: rgba(255,255,255,.09); color: #fff; }
     .input-glass {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px; color: #f1f5f9; padding: 0.6rem 0.9rem;
-      font-size: 0.875rem; width: 100%; outline: none; transition: all 0.2s;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      color: #f8fafc;
+      padding: .7rem .95rem;
+      font-size: .875rem;
+      width: 100%;
+      transition: all .2s;
     }
-    .input-glass:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.08); }
-    .input-glass::placeholder { color: rgba(241,245,249,0.3); }
-    select.input-glass option { background: #1a1740; color: #f1f5f9; }
-    .badge-green { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-red   { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-blue  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-purple{ background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
+    .input-glass::placeholder { color: rgba(241,245,249,.42); }
+    .input-glass:focus { border-color: rgba(96,165,250,.75); background: rgba(255,255,255,.08); }
+    select.input-glass option { background: #130f2b; color: #f8fafc; }
+    .badge-green,.badge-red,.badge-blue,.badge-purple {
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: .72rem;
+      border: 1px solid transparent;
+    }
+    .badge-green { background: rgba(16,185,129,.16); color: #6ee7b7; border-color: rgba(16,185,129,.28); }
+    .badge-red { background: rgba(239,68,68,.16); color: #fca5a5; border-color: rgba(239,68,68,.28); }
+    .badge-blue { background: rgba(59,130,246,.16); color: #93c5fd; border-color: rgba(59,130,246,.28); }
+    .badge-purple { background: rgba(124,58,237,.16); color: #c4b5fd; border-color: rgba(124,58,237,.28); }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 999px; }
+    .chip {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #dbeafe;
+      padding: .45rem .75rem;
+      border-radius: 999px;
+    }
+    .chip:hover { background: rgba(255,255,255,.1); }
+    .typing-indicator span { animation: pulse 1.2s infinite; display: inline-block; margin-left: 2px; }
+    .typing-indicator span:nth-child(2) { animation-delay: .15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      color: rgba(241,245,249,.58);
+    }
+    .empty-state h3 { color: #fff; font-weight: 700; margin-top: .9rem; }
+    .breadcrumb a { color: rgba(191,219,254,.9); }
+    .breadcrumb span { color: rgba(241,245,249,.42); }
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.12), rgba(255,255,255,.06));
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    @keyframes pulse { 0%,80%,100% { opacity: .2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body>
-  <div class="md:flex min-h-screen">
-    <aside class="w-full md:w-64 glass border-b md:border-b-0 md:border-r border-white/10 md:flex md:flex-col md:fixed md:h-full z-30" id="sidebar">
-      <div class="p-4 md:p-6 border-b border-white/10">
+<body x-data="appShell()">
+  <div class="lg:flex min-h-screen">
+    <aside class="w-full lg:w-64 glass border-b lg:border-b-0 lg:border-r border-white/10 lg:fixed lg:h-full z-30" id="sidebar" :class="mobileNavOpen ? 'block' : 'hidden lg:block'">
+      <div class="p-4 md:p-6 border-b border-white/10 flex items-center justify-between lg:block">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
             <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
           </div>
           <div>
             <p class="font-bold text-white text-sm">FinanceFlow</p>
-            <p class="text-xs" style="color:rgba(241,245,249,0.4)">Controle financeiro</p>
+            <p class="text-xs" style="color:rgba(241,245,249,0.5)">Controle financeiro</p>
           </div>
         </div>
+        <button type="button" class="lg:hidden btn-ghost !p-2" @click="mobileNavOpen=false" aria-label="Fechar menu"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-
-      <nav class="p-4 space-y-1 overflow-y-auto">
+      <nav class="p-4 space-y-1 overflow-y-auto scrollbar-thin max-h-[calc(100vh-11rem)]">
         {% with request.resolver_match.url_name as url_name %}
-        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if url_name == 'dashboard' %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i> Dashboard
-        </a>
-        <a href="{% url 'transaction_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'transaction' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="arrow-left-right" class="w-4 h-4 shrink-0"></i> Transações
-        </a>
-        <a href="{% url 'account_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'account' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i> Contas
-        </a>
-        <a href="{% url 'card_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'card' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i> Cartões
-        </a>
-        <a href="{% url 'portfolio_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'investment' in url_name or 'portfolio' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i> Investimentos
-        </a>
-        <a href="{% url 'budget_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'budget' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="target" class="w-4 h-4 shrink-0"></i> Orçamentos
-        </a>
-        <a href="{% url 'reports_home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'report' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i> Relatórios
-        </a>
-        <a href="{% url 'category_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'category' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="tags" class="w-4 h-4 shrink-0"></i> Categorias
-        </a>
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if url_name == 'dashboard' %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i> Dashboard</a>
+        <a href="{% url 'transaction_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'transaction' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="arrow-left-right" class="w-4 h-4 shrink-0"></i> Transações</a>
+        <a href="{% url 'account_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'account' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="wallet" class="w-4 h-4 shrink-0"></i> Contas</a>
+        <a href="{% url 'card_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'card' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i> Cartões</a>
+        <a href="{% url 'portfolio_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'investment' in url_name or 'portfolio' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i> Investimentos</a>
+        <a href="{% url 'budget_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'budget' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="target" class="w-4 h-4 shrink-0"></i> Orçamentos</a>
+        <a href="{% url 'reports_home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'report' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i> Relatórios</a>
+        <a href="{% url 'ai_chat_home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'ai_' in url_name %}glass text-white font-medium{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}"><i data-lucide="bot" class="w-4 h-4 shrink-0"></i> Assistente IA</a>
         {% endwith %}
       </nav>
-
-      <div class="p-4 border-t border-white/10 mt-auto">
+      <div class="p-4 border-t border-white/10 mt-auto hidden lg:block">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
-            {{ request.user.first_name|first|upper }}
-          </div>
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">{{ request.user.first_name|first|upper }}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-white truncate">{{ request.user.get_full_name }}</p>
-            <p class="text-xs truncate" style="color:rgba(241,245,249,0.4)">{{ family_group.name|default:"Sem grupo" }}</p>
+            <p class="text-xs truncate" style="color:rgba(241,245,249,0.45)">{{ family_group.name|default:"Sem grupo" }}</p>
           </div>
-          <a href="{% url 'logout' %}" class="text-slate-400 hover:text-white transition-colors">
-            <i data-lucide="log-out" class="w-4 h-4"></i>
-          </a>
+          <a href="{% url 'logout' %}" class="text-slate-300 hover:text-white transition-colors" aria-label="Sair"><i data-lucide="log-out" class="w-4 h-4"></i></a>
         </div>
       </div>
     </aside>
 
-    <main class="flex-1 md:ml-64 min-h-screen">
-      <header class="sticky top-0 z-20 glass border-b border-white/10 px-4 md:px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-lg font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h1>
-          <p class="text-xs" style="color:rgba(241,245,249,0.4)">{% block page_subtitle %}{% endblock %}</p>
+    <main class="flex-1 lg:ml-64 min-h-screen">
+      <header class="sticky top-0 z-20 glass border-b border-white/10 px-4 md:px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-start gap-3 min-w-0">
+          <button type="button" class="lg:hidden btn-ghost !p-2" @click="mobileNavOpen=true" aria-label="Abrir menu"><i data-lucide="menu" class="w-4 h-4"></i></button>
+          <div class="min-w-0">
+            <div class="breadcrumb text-xs mb-1 hidden md:flex items-center gap-2">{% block breadcrumbs %}<a href="{% url 'dashboard' %}">Início</a>{% endblock %}</div>
+            <h1 class="text-lg font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+            <p class="text-xs" style="color:rgba(241,245,249,0.45)">{% block page_subtitle %}{% endblock %}</p>
+          </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3 shrink-0">
+          <a href="{% url 'ai_chat_home' %}" class="btn-ghost !p-2 relative" aria-label="Abrir assistente IA"><i data-lucide="bot" class="w-4 h-4"></i><span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-green-400"></span></a>
+          <button type="button" class="btn-ghost !p-2 relative" aria-label="Notificações">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            {% if unread_notifications_count %}<span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[10px] text-white">{{ unread_notifications_count }}</span>{% endif %}
+          </button>
           {% block topbar_actions %}{% endblock %}
-          <a href="{% url 'profile' %}" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
-            {{ request.user.first_name|first|upper }}
-          </a>
+          <a href="{% url 'profile' %}" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">{{ request.user.first_name|first|upper }}</a>
         </div>
       </header>
 
-      <div class="p-4 md:p-6">
-        {% if messages %}
-          {% for message in messages %}
-            <div class="mb-4 px-4 py-3 rounded-xl text-sm glass border {% if message.tags == 'success' %}border-green-500/30 text-green-400{% elif message.tags == 'error' %}border-red-500/30 text-red-400{% else %}border-blue-500/30 text-blue-400{% endif %}" x-data="{show:true}" x-show="show" x-init="setTimeout(()=>show=false,4000)">
-              {{ message }}
-            </div>
-          {% endfor %}
-        {% endif %}
+      <div class="p-4 md:p-6 space-y-4">
+        <div id="toast-stack" class="fixed left-4 bottom-4 z-[70] space-y-3 w-[min(92vw,360px)]">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="glass rounded-2xl px-4 py-3 border {% if message.tags == 'success' %}border-green-500/30 text-green-300{% elif message.tags == 'error' %}border-red-500/30 text-red-300{% else %}border-blue-500/30 text-blue-300{% endif %}" role="alert" x-data="{show:true}" x-show="show" x-transition x-init="setTimeout(() => show = false, 4500)">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        </div>
         {% block content %}{% endblock %}
       </div>
     </main>
   </div>
 
+  {% if request.user.is_authenticated %}
+  <div x-data="aiWidget({ sessionId: '' })" class="fixed bottom-5 right-5 z-[60]">
+    <button type="button" @click="toggle()" class="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-white relative" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)" aria-label="Abrir assistente financeiro">
+      <i data-lucide="bot" class="w-6 h-6"></i>
+      <span class="absolute top-2 right-2 w-3 h-3 rounded-full bg-green-400 border-2 border-[#080618]"></span>
+    </button>
+    <section x-show="open" x-transition class="glass rounded-3xl w-[min(92vw,400px)] h-[520px] mt-4 p-4 shadow-2xl flex flex-col origin-bottom-right">
+      <div class="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
+        <div>
+          <p class="text-sm font-semibold text-white">FinanceFlow AI</p>
+          <p class="text-xs text-slate-400">{{ ai_model_status.model }} · {{ ai_model_status.status }}</p>
+        </div>
+        <button type="button" class="btn-ghost !p-2" @click="toggle()" aria-label="Fechar chat"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="py-3 border-b border-white/10 mb-3">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Sugestões rápidas</p>
+          <button
+            type="button"
+            class="text-xs text-slate-300 hover:text-white transition-colors"
+            @click="toggleSuggestions()"
+            :aria-expanded="suggestionsOpen.toString()"
+            aria-label="Mostrar ou ocultar sugestões"
+          >
+            <span x-text="suggestionsOpen ? 'Ocultar' : 'Mostrar'"></span>
+          </button>
+        </div>
+        <div x-show="suggestionsOpen" x-transition class="flex flex-wrap gap-2 pt-3">
+          <button type="button" class="chip" @click="message='Quanto gastei este mês?'">Quanto gastei este mês?</button>
+          <button type="button" class="chip" @click="message='Como está meu orçamento?'">Como está meu orçamento?</button>
+          <button type="button" class="chip" @click="message='Quais são as próximas faturas?'">Próximas faturas?</button>
+          <button type="button" class="chip" @click="message='Como está minha carteira hoje?'">Minha carteira hoje</button>
+          <button type="button" class="chip" @click="message='Onde posso economizar?'">Onde posso economizar?</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto scrollbar-thin space-y-3 pr-1" x-ref="messages">
+        <template x-for="item in messages" :key="item.id">
+          <div class="flex" :class="item.role === 'user' ? 'justify-end' : 'justify-start'">
+            <article class="max-w-[85%] rounded-2xl px-4 py-3" :class="item.role === 'user' ? 'bg-gradient-to-br from-purple-600 to-blue-500 text-white' : 'glass text-slate-100'">
+              <div x-show="item.role === 'assistant'" x-html="renderMarkdown(item.content)"></div>
+              <p x-show="item.role === 'user'" class="whitespace-pre-wrap" x-text="item.content"></p>
+            </article>
+          </div>
+        </template>
+        <template x-if="typing"><div class="flex justify-start"><div class="glass rounded-2xl px-4 py-3 text-sm text-slate-300 typing-indicator">digitando<span>.</span><span>.</span><span>.</span></div></div></template>
+      </div>
+      <form class="pt-3 border-t border-white/10" @submit.prevent="send()">
+        <label for="widget-ai-input" class="sr-only">Mensagem para o assistente</label>
+        <textarea id="widget-ai-input" x-model="message" rows="3" class="input-glass mb-3" placeholder="Pergunte sobre saldos, gastos, metas ou carteira"></textarea>
+        <div class="flex items-center justify-between gap-3">
+          <a href="{% url 'ai_chat_home' %}" class="text-xs text-purple-300 hover:text-white">Abrir página completa</a>
+          <button type="submit" class="btn-primary" aria-label="Enviar mensagem">Enviar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  {% endif %}
+
+  <button type="button" x-show="showScrollTop" x-transition @click="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed bottom-5 left-5 z-[55] btn-ghost !p-3" aria-label="Voltar ao topo"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+
+  <div id="confirm-overlay" class="hidden fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-md">
+      <h3 class="text-lg font-semibold text-white mb-2">Confirmar ação</h3>
+      <p id="confirm-message" class="text-sm text-slate-300 mb-5">Tem certeza?</p>
+      <div class="flex justify-end gap-3">
+        <button type="button" id="confirm-cancel" class="btn-ghost">Cancelar</button>
+        <button type="button" id="confirm-accept" class="btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     lucide.createIcons();
     document.body.addEventListener('htmx:afterRequest', () => lucide.createIcons());
@@ -158,4 +297,3 @@
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>
-

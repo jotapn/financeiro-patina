@@ -7,7 +7,7 @@
     </div>
     <div class="flex gap-2">
       <a href="{% url 'account_edit' account.pk %}" class="text-xs text-blue-300">Editar</a>
-      <form method="post" action="{% url 'account_delete' account.pk %}">{% csrf_token %}<button type="submit" class="text-xs text-red-300">Excluir</button></form>
+      <form method="post" action="{% url 'account_delete' account.pk %}" data-confirm="Remover esta conta da visão ativa?">{% csrf_token %}<button type="submit" class="text-xs text-red-300">Excluir</button></form>
     </div>
   </div>
   <p class="mt-3 text-lg font-semibold {% if account.current_balance >= 0 %}text-green-400{% else %}text-red-400{% endif %}">

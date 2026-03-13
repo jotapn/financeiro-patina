@@ -3,6 +3,9 @@
 {% block title %}Transações - FinanceFlow{% endblock %}
 {% block page_title %}Transações{% endblock %}
 {% block topbar_actions %}
+<a href="{% url 'import-csv' %}" class="btn-ghost">Importar CSV</a>
+<label for="ocr-upload" class="btn-ghost cursor-pointer">OCR comprovante</label>
+<input id="ocr-upload" type="file" accept="image/*" class="hidden">
 <a href="{% url 'transaction_create' %}" class="btn-primary">Nova transação</a>
 {% endblock %}
 {% block content %}
@@ -47,7 +50,13 @@
       {% for tx in transactions %}
         {% include 'transactions/partials/transaction_row.html' with tx=tx %}
       {% empty %}
-        <tr><td colspan="6" class="py-6 text-center text-slate-400">Sem transações no filtro.</td></tr>
+        <tr><td colspan="6" class="py-6">
+          <div class="empty-state">
+            <svg width="72" height="72" viewBox="0 0 120 120" fill="none" aria-hidden="true"><rect x="20" y="18" width="80" height="84" rx="16" stroke="rgba(255,255,255,.16)"/><path d="M41 48h38M41 62h38M41 76h24" stroke="rgba(241,245,249,.78)" stroke-width="6" stroke-linecap="round"/></svg>
+            <h3>Sem transações neste filtro</h3>
+            <p>Ajuste os filtros, importe um CSV ou registre uma nova movimentação.</p>
+          </div>
+        </td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -55,7 +64,7 @@
 
 <div class="glass rounded-2xl p-5 mt-4">
   <h3 class="font-semibold mb-4">Criar/editar transação</h3>
-  <form method="post" enctype="multipart/form-data" action="{% if editing %}{% url 'transaction_edit' editing.pk %}{% else %}{% url 'transaction_create' %}{% endif %}" class="grid md:grid-cols-2 gap-3">
+  <form id="transaction-form" method="post" enctype="multipart/form-data" action="{% if editing %}{% url 'transaction_edit' editing.pk %}{% else %}{% url 'transaction_create' %}{% endif %}" class="grid md:grid-cols-2 gap-3">
     {% csrf_token %}
     {% for field in form %}
       <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
@@ -66,5 +75,26 @@
     <div class="md:col-span-2"><button class="btn-primary" type="submit">Salvar transação</button></div>
   </form>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.getElementById('ocr-upload')?.addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('receipt', file);
+  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  const response = await fetch('{% url "ocr-receipt" %}', {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+  const data = await response.json();
+  if (data.description) document.querySelector('[name=description]').value = data.description;
+  if (data.amount) document.querySelector('[name=amount]').value = data.amount;
+  if (data.date) document.querySelector('[name=date]').value = data.date;
+  if (data.description) document.querySelector('[name=location]').value = data.description;
+});
+</script>
 {% endblock %}
 
