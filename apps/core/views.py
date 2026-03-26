@@ -1,4 +1,4 @@
-﻿from datetime import date, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.accounts.models import FinancialAccount, PaymentMethod
 from apps.transactions.models import Transaction
 
+from .decorators import family_edit_required
 from .forms import InviteForm, LoginForm, ProfileForm, RegisterForm
 from .models import FamilyGroup, FamilyInvitation, UserProfile
 
@@ -19,9 +20,9 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            group = FamilyGroup.objects.create(name=f'Família de {user.first_name}')
+            group = FamilyGroup.objects.create(name=f'Fam\u00edlia de {user.first_name}')
             UserProfile.objects.create(user=user, family_group=group, role='admin')
-            for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('Débito', 'debit')]:
+            for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('D\u00e9bito', 'debit')]:
                 PaymentMethod.objects.create(
                     family_group=group,
                     name=name,
@@ -157,6 +158,7 @@ def family_settings(request):
 
 
 @login_required
+@family_edit_required
 def invite_member(request):
     if request.method == 'POST':
         form = InviteForm(request.POST)
@@ -183,6 +185,5 @@ def accept_invite(request, token):
     user_profile.save()
     inv.accepted = True
     inv.save()
-    messages.success(request, f'Você entrou no grupo {inv.family_group.name}!')
+    messages.success(request, f'Voc\u00ea entrou no grupo {inv.family_group.name}!')
     return redirect('dashboard')
-

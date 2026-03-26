@@ -1,4 +1,4 @@
-﻿from datetime import date, timedelta
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,6 +6,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.categories.models import Category
+from apps.core.decorators import family_edit_required
 
 from .forms import TransactionForm
 from .models import Transaction
@@ -64,6 +65,7 @@ def transaction_list(request):
 
 
 @login_required
+@family_edit_required
 def transaction_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -84,6 +86,7 @@ def transaction_create(request):
 
 
 @login_required
+@family_edit_required
 def transaction_edit(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)
@@ -99,6 +102,7 @@ def transaction_edit(request, pk):
 
 
 @login_required
+@family_edit_required
 def transaction_delete(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)
@@ -111,6 +115,7 @@ def transaction_delete(request, pk):
 
 
 @login_required
+@family_edit_required
 def toggle_status(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)
@@ -120,4 +125,3 @@ def toggle_status(request, pk):
         if request.htmx:
             return render(request, 'transactions/partials/transaction_row.html', {'tx': tx})
     return redirect('transaction_list')
-

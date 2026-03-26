@@ -114,6 +114,24 @@ class Investment(models.Model):
     def is_crypto(self):
         return bool(self.asset_class and self.asset_class.asset_type == 'crypto')
 
+    def initialize_snapshot(self):
+        if self.transactions.exists():
+            self.recalculate()
+            return
+
+        if self.is_fixed_income:
+            base_amount = self.invested_amount or Decimal('0')
+            self.total_invested = base_amount
+            self.current_value = base_amount + (self.total_earnings or Decimal('0'))
+        else:
+            quantity = self.quantity or Decimal('0')
+            average_price = self.average_price or Decimal('0')
+            current_price = self.current_price or average_price
+            self.total_invested = quantity * average_price
+            self.current_value = quantity * current_price
+
+        self.save(update_fields=['total_invested', 'current_value'])
+
     def recalculate(self):
         from django.db.models import Sum
 

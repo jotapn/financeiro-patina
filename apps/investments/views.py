@@ -1,8 +1,10 @@
-﻿from decimal import Decimal
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+
+from apps.core.decorators import family_edit_required
 
 from .forms import InvestmentForm, InvestmentGoalForm, InvestmentTransactionForm
 from .models import AssetClass, Investment, InvestmentGoal
@@ -106,6 +108,7 @@ def investment_list(request):
 
 
 @login_required
+@family_edit_required
 def investment_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -115,6 +118,7 @@ def investment_create(request):
             inv.owner = request.user
             inv.family_group = group
             inv.save()
+            inv.initialize_snapshot()
             messages.success(request, f'Investimento "{inv.name}" cadastrado!')
             return redirect('investment_detail', pk=inv.pk)
     else:
@@ -144,6 +148,7 @@ def investment_detail(request, pk):
 
 
 @login_required
+@family_edit_required
 def investment_add_transaction(request, pk):
     group = request.user.profile.family_group
     inv = get_object_or_404(Investment, pk=pk, family_group=group)
@@ -159,6 +164,7 @@ def investment_add_transaction(request, pk):
 
 
 @login_required
+@family_edit_required
 def investment_goal_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -173,6 +179,7 @@ def investment_goal_create(request):
 
 
 @login_required
+@family_edit_required
 def refresh_prices(request):
     from .tasks import update_crypto_prices, update_stock_prices
 

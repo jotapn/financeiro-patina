@@ -1,6 +1,8 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+
+from apps.core.decorators import family_edit_required
 
 from .models import Category
 
@@ -13,6 +15,7 @@ def category_list(request):
 
 
 @login_required
+@family_edit_required
 def create_default_transfer_category(request):
     if request.method == 'POST':
         Category.objects.get_or_create(
@@ -23,4 +26,3 @@ def create_default_transfer_category(request):
         )
         messages.success(request, 'Categoria de transferência garantida.')
     return redirect('category_list')
-

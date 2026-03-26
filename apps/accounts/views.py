@@ -1,6 +1,8 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+
+from apps.core.decorators import family_edit_required
 
 from .forms import FinancialAccountForm, TransferForm
 from .models import FinancialAccount
@@ -24,6 +26,7 @@ def account_list(request):
 
 
 @login_required
+@family_edit_required
 def account_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -51,6 +54,7 @@ def account_detail(request, pk):
 
 
 @login_required
+@family_edit_required
 def account_edit(request, pk):
     group = request.user.profile.family_group
     account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
@@ -76,6 +80,7 @@ def account_edit(request, pk):
 
 
 @login_required
+@family_edit_required
 def account_delete(request, pk):
     group = request.user.profile.family_group
     account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
@@ -87,6 +92,7 @@ def account_delete(request, pk):
 
 
 @login_required
+@family_edit_required
 def transfer(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -116,4 +122,3 @@ def transfer(request):
     else:
         form = TransferForm(family_group=group)
     return render(request, 'accounts/list.html', {'transfer_form': form, 'show_transfer': True})
-

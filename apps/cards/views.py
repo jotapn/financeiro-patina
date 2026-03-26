@@ -1,4 +1,4 @@
-﻿from calendar import monthrange
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 
@@ -9,6 +9,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.categories.models import Category
+from apps.core.decorators import family_edit_required
 from apps.transactions.forms import TransactionForm
 from apps.transactions.models import Transaction
 
@@ -46,6 +47,12 @@ def _update_invoice_total(invoice):
     total = invoice.transactions.filter(transaction_type='expense').aggregate(t=Sum('amount'))['t'] or Decimal('0')
     invoice.total_amount = total
     invoice.save(update_fields=['total_amount'])
+
+
+def _get_financial_category():
+    return Category.objects.filter(name='Transfer\u00eancia', is_system=True).first() or Category.objects.filter(
+        is_system=True
+    ).first()
 
 
 def _create_installments(parent_tx, card, total):
@@ -113,6 +120,7 @@ def card_list(request):
 
 
 @login_required
+@family_edit_required
 def card_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -123,7 +131,7 @@ def card_create(request):
             card.family_group = group
             card.save()
             _generate_future_invoices(card, 3)
-            messages.success(request, f'Cartão {card.name} cadastrado!')
+            messages.success(request, f'Cart\u00e3o {card.name} cadastrado!')
             return redirect('card_list')
     else:
         form = CreditCardForm(family_group=group)
@@ -174,6 +182,7 @@ def card_detail(request, pk):
 
 
 @login_required
+@family_edit_required
 def pay_invoice(request, pk):
     group = request.user.profile.family_group
     invoice = get_object_or_404(CardInvoice, pk=pk, card__family_group=group)
@@ -185,18 +194,14 @@ def pay_invoice(request, pk):
             account = form.cleaned_data['account']
             payment_date = form.cleaned_data['payment_date']
 
-            pay_cat = Category.objects.filter(name='Moradia', is_system=True).first() or Category.objects.filter(
-                is_system=True
-            ).first()
-
             tx = Transaction.objects.create(
                 user=request.user,
                 family_group=group,
                 account=account,
-                category=pay_cat,
+                category=_get_financial_category(),
                 description=f'Pagamento fatura {invoice.card.name} {invoice.reference_month.strftime("%m/%Y")}',
                 amount=amount,
-                transaction_type='expense',
+                transaction_type='transfer',
                 date=payment_date,
                 status='paid',
             )
@@ -214,6 +219,7 @@ def pay_invoice(request, pk):
 
 
 @login_required
+@family_edit_required
 def add_card_transaction(request, card_pk):
     group = request.user.profile.family_group
     card = get_object_or_404(CreditCard, pk=card_pk, family_group=group)
@@ -236,8 +242,8 @@ def add_card_transaction(request, card_pk):
                 _create_installments(tx, card, installments)
 
             _update_invoice_total(invoice)
-            messages.success(request, 'Lançamento no cartão adicionado!')
+            messages.success(request, 'Lan\u00e7amento no cart\u00e3o adicionado!')
         else:
-            messages.error(request, 'Não foi possível salvar lançamento no cartão.')
+            messages.error(request, 'N\u00e3o foi poss\u00edvel salvar lan\u00e7amento no cart\u00e3o.')
 
     return redirect('card_detail', pk=card_pk)

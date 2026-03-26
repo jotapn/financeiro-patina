@@ -15,10 +15,10 @@ class EnsureUserProfileMiddleware:
             )
             if profile.family_group is None:
                 owner_name = user.first_name or user.email.split('@')[0]
-                group = FamilyGroup.objects.create(name=f'Família de {owner_name}')
+                group = FamilyGroup.objects.create(name=f'Fam\u00edlia de {owner_name}')
                 profile.family_group = group
                 profile.save(update_fields=['family_group'])
-                for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('Débito', 'debit')]:
+                for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('D\u00e9bito', 'debit')]:
                     PaymentMethod.objects.get_or_create(
                         family_group=group,
                         name=name,
