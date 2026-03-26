@@ -1,50 +1,56 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load humanize %}
 {% block title %}Relatórios - FinanceFlow{% endblock %}
 {% block page_title %}Relatórios{% endblock %}
-{% block page_subtitle %}Análise financeira detalhada{% endblock %}
+{% block page_subtitle %}Leitura de performance, concentração e evolução financeira{% endblock %}
 
 {% block topbar_actions %}
-<div class="flex items-center gap-2 glass rounded-xl px-3 py-1.5">
-  <a href="?view=personal" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'personal' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Pessoal</a>
-  <a href="?view=family" class="text-xs px-3 py-1 rounded-lg transition-all {% if view_mode == 'family' %}bg-purple-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">Familiar</a>
+<div class="segment-switch">
+  <a href="?view=personal" class="{% if view_mode == 'personal' %}is-active{% endif %}">Pessoal</a>
+  <a href="?view=family" class="{% if view_mode == 'family' %}is-active{% endif %}">Familiar</a>
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-  <div class="glass rounded-2xl p-5">
-    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Receitas {{ today.year }}</p>
-    <p class="text-2xl font-bold text-green-400">R$ {{ year_income|floatformat:2|intcomma }}</p>
+  <div class="glass metric-card rounded-[1.75rem] p-5">
+    <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.42)">Receitas {{ today.year }}</p>
+    <p class="text-3xl font-bold text-emerald-300">R$ {{ year_income|floatformat:2|intcomma }}</p>
   </div>
-  <div class="glass rounded-2xl p-5">
-    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Despesas {{ today.year }}</p>
-    <p class="text-2xl font-bold text-red-400">R$ {{ year_expense|floatformat:2|intcomma }}</p>
+  <div class="glass metric-card rounded-[1.75rem] p-5">
+    <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.42)">Despesas {{ today.year }}</p>
+    <p class="text-3xl font-bold text-rose-300">R$ {{ year_expense|floatformat:2|intcomma }}</p>
   </div>
-  <div class="glass rounded-2xl p-5">
-    <p class="text-xs mb-1" style="color:rgba(241,245,249,0.5)">Saldo {{ today.year }}</p>
-    <p class="text-2xl font-bold {% if year_savings >= 0 %}text-purple-400{% else %}text-red-400{% endif %}">R$ {{ year_savings|floatformat:2 }}</p>
+  <div class="glass metric-card rounded-[1.75rem] p-5">
+    <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.42)">Saldo {{ today.year }}</p>
+    <p class="text-3xl font-bold {% if year_savings >= 0 %}text-sky-300{% else %}text-rose-300{% endif %}">R$ {{ year_savings|floatformat:2 }}</p>
   </div>
 </div>
 
-<div class="glass rounded-2xl p-5 mb-6">
-  <h3 class="text-sm font-semibold text-white mb-4">Fluxo de caixa - últimos 12 meses</h3>
+<div class="glass rounded-[1.75rem] p-6 mb-6">
+  <div class="mb-5">
+    <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Flow</p>
+    <h3 class="page-display text-2xl text-white">Fluxo de caixa 12 meses</h3>
+  </div>
   <canvas id="flowChart12" height="80"></canvas>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="glass rounded-2xl p-5">
-    <h3 class="text-sm font-semibold text-white mb-4">Top categorias - {{ today.year }}</h3>
-    <div class="space-y-3">
+  <div class="glass rounded-[1.75rem] p-6">
+    <div class="mb-5">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Concentração</p>
+      <h3 class="page-display text-2xl text-white">Top categorias {{ today.year }}</h3>
+    </div>
+    <div class="space-y-4">
       {% for cat in year_expenses %}
       <div>
-        <div class="flex justify-between text-xs mb-1">
-          <span class="text-white">{{ cat.category__name }}</span>
-          <span style="color:rgba(241,245,249,0.5)">R$ {{ cat.total|floatformat:2|intcomma }}</span>
+        <div class="flex justify-between text-xs mb-2">
+          <span class="text-white font-semibold">{{ cat.category__name }}</span>
+          <span style="color:rgba(245,247,251,0.5)">R$ {{ cat.total|floatformat:2|intcomma }}</span>
         </div>
-        <div class="w-full rounded-full h-1.5" style="background:rgba(255,255,255,0.06)">
+        <div class="w-full rounded-full h-2" style="background:rgba(255,255,255,0.06)">
           {% if year_expense > 0 %}
-          <div class="h-1.5 rounded-full" style="width:{% widthratio cat.total year_expense 100 %}%; background:{{ cat.category__color }}"></div>
+          <div class="h-2 rounded-full" style="width:{% widthratio cat.total year_expense 100 %}%; background:{{ cat.category__color }}"></div>
           {% endif %}
         </div>
       </div>
@@ -52,12 +58,15 @@
     </div>
   </div>
 
-  <div class="glass rounded-2xl p-5">
-    <h3 class="text-sm font-semibold text-white mb-4">Gastos de {{ today|date:"F" }}</h3>
+  <div class="glass rounded-[1.75rem] p-6">
+    <div class="mb-5">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Mês atual</p>
+      <h3 class="page-display text-2xl text-white">Gastos de {{ today|date:"F" }}</h3>
+    </div>
     {% if month_by_category %}
     <canvas id="monthPie" height="200"></canvas>
     {% else %}
-    <div class="flex flex-col items-center justify-center h-40" style="color:rgba(241,245,249,0.3)">
+    <div class="flex flex-col items-center justify-center h-40" style="color:rgba(245,247,251,0.3)">
       <i data-lucide="pie-chart" class="w-8 h-8 mb-2"></i>
       <p class="text-sm">Sem dados este mês</p>
     </div>
@@ -79,23 +88,23 @@ new Chart(document.getElementById('flowChart12'), {
       {
         label: 'Receitas',
         data: flowData.map(d => d.income),
-        backgroundColor: 'rgba(16,185,129,0.6)',
-        borderRadius: 4, borderSkipped: false,
+        backgroundColor: 'rgba(53,211,154,0.7)',
+        borderRadius: 6, borderSkipped: false
       },
       {
         label: 'Despesas',
         data: flowData.map(d => d.expense),
-        backgroundColor: 'rgba(239,68,68,0.6)',
-        borderRadius: 4, borderSkipped: false,
+        backgroundColor: 'rgba(255,106,122,0.7)',
+        borderRadius: 6, borderSkipped: false
       }
     ]
   },
   options: {
     responsive: true,
-    plugins: { legend: { labels: { color: 'rgba(241,245,249,0.6)', font: { size: 11 } } } },
+    plugins: { legend: { labels: { color: 'rgba(245,247,251,0.65)', font: { size: 11 } } } },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(241,245,249,0.5)', font: { size: 10 } } },
-      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(241,245,249,0.5)', font: { size: 10 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } }
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(245,247,251,0.48)', font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(245,247,251,0.48)', font: { size: 10 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } }
     }
   }
 });
@@ -109,12 +118,13 @@ if (monthData.length > 0) {
         data: monthData.map(d => d.total),
         backgroundColor: monthData.map(d => d.category__color + 'cc'),
         borderColor: monthData.map(d => d.category__color),
-        borderWidth: 1,
+        borderWidth: 1
       }]
     },
     options: {
-      responsive: true, cutout: '60%',
-      plugins: { legend: { position: 'bottom', labels: { color: 'rgba(241,245,249,0.6)', font: { size: 10 }, padding: 8, boxWidth: 10 } } }
+      responsive: true,
+      cutout: '60%',
+      plugins: { legend: { position: 'bottom', labels: { color: 'rgba(245,247,251,0.62)', font: { size: 10 }, padding: 8, boxWidth: 10 } } }
     }
   });
 }

@@ -1,57 +1,68 @@
-﻿<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}FinanceFlow{% endblock %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * { font-family: 'Plus Jakarta Sans', sans-serif; }
-    body {
-      background: #080618;
-      background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.2) 0%, transparent 55%),
-        radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.18) 0%, transparent 55%);
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      color: #f1f5f9;
-    }
-    .glass {
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.13);
-      border-radius: 20px;
-    }
-    .input-glass {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px; color: #f1f5f9; padding: 0.7rem 1rem;
-      font-size: 0.875rem; width: 100%; outline: none; transition: all 0.2s;
-    }
-    .input-glass:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.09); }
-    .btn-primary {
-      background: linear-gradient(135deg, #7c3aed, #3b82f6);
-      color: white; border: none; border-radius: 12px;
-      padding: 0.8rem 1.5rem; font-weight: 600; cursor: pointer;
-      transition: all 0.2s; font-size: 0.9rem; width: 100%;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
-    label { display: block; font-size: 0.8rem; color: rgba(241,245,249,0.6); margin-bottom: 0.4rem; }
-  </style>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/glass.css' %}">
+  <link rel="stylesheet" href="{% static 'css/finex-system.css' %}">
 </head>
-<body>
-  <div class="w-full max-w-md px-4">
-    <div class="text-center mb-8">
-      <div class="inline-flex w-14 h-14 rounded-2xl items-center justify-center mb-4" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+<body class="px-4 py-4 md:px-6 md:py-6">
+  <div class="auth-shell mx-auto">
+    <section class="auth-showcase glass rounded-[2rem] p-8 md:p-12 flex flex-col justify-between">
+      <div class="space-y-8 relative z-10">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-[0_16px_36px_rgba(47,125,244,0.35)]" style="background:linear-gradient(135deg,#2f7df4,#61b6ff)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <p class="brand-wordmark text-2xl text-white leading-none">FinanceFlow</p>
+            <p class="text-[11px] uppercase tracking-[0.24em]" style="color:rgba(245,247,251,0.38)">Design System Layer</p>
+          </div>
+        </div>
+
+        <div class="space-y-5 max-w-xl">
+          <p class="text-[11px] uppercase tracking-[0.28em]" style="color:rgba(245,247,251,0.42)">Financial command center</p>
+          <h1 class="page-display text-5xl md:text-6xl leading-[0.95] text-white">
+            Interface clara para
+            <span style="color:#61b6ff">dinheiro em movimento.</span>
+          </h1>
+          <p class="text-base md:text-lg max-w-lg" style="color:rgba(245,247,251,0.62)">
+            Controle contas, cartões, orçamento e investimentos em uma linguagem visual única, inspirada no seu design system.
+          </p>
+        </div>
       </div>
-      <h1 class="text-2xl font-bold text-white">FinanceFlow</h1>
-      <p style="color:rgba(241,245,249,0.5);font-size:0.875rem">Controle financeiro familiar</p>
-    </div>
-    <div class="glass p-8">
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+        <div class="auth-metric p-4">
+          <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.4)">Monitoramento</p>
+          <p class="text-lg font-semibold text-white">Fluxo contínuo</p>
+          <p class="text-sm mt-2" style="color:rgba(245,247,251,0.56)">KPIs, histórico e visão consolidada da família.</p>
+        </div>
+        <div class="auth-metric p-4">
+          <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.4)">Ação rápida</p>
+          <p class="text-lg font-semibold text-white">Operação diária</p>
+          <p class="text-sm mt-2" style="color:rgba(245,247,251,0.56)">Lançamentos, transferências e pagamentos sem fricção.</p>
+        </div>
+        <div class="auth-metric p-4">
+          <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.4)">Visão futura</p>
+          <p class="text-lg font-semibold text-white">Metas e portfolio</p>
+          <p class="text-sm mt-2" style="color:rgba(245,247,251,0.56)">Acompanhe patrimônio, orçamento e evolução no mesmo lugar.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass rounded-[2rem] p-8 md:p-10 flex flex-col justify-center">
       {% block content %}{% endblock %}
-    </div>
+    </section>
   </div>
 </body>
 </html>
-

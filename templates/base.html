@@ -1,11 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}FinanceFlow{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -13,108 +14,61 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/glass.css' %}">
-  <style>
-    * { font-family: 'Plus Jakarta Sans', sans-serif; }
-    body {
-      background: #080618;
-      background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.18) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.15) 0%, transparent 50%);
-      min-height: 100vh;
-      color: #f1f5f9;
-    }
-    .glass {
-      background: rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-    .glass-hover:hover {
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(124,58,237,0.35);
-      transform: translateY(-2px);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #7c3aed, #3b82f6);
-      color: white; border: none; border-radius: 10px;
-      padding: 0.6rem 1.2rem; font-weight: 500; cursor: pointer;
-      transition: all 0.2s; font-size: 0.875rem;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
-    .btn-ghost {
-      background: rgba(255,255,255,0.06); color: rgba(241,245,249,0.7);
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
-      padding: 0.6rem 1.2rem; font-weight: 500; cursor: pointer;
-      transition: all 0.2s; font-size: 0.875rem;
-    }
-    .btn-ghost:hover { background: rgba(255,255,255,0.10); color: #f1f5f9; }
-    .input-glass {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px; color: #f1f5f9; padding: 0.6rem 0.9rem;
-      font-size: 0.875rem; width: 100%; outline: none; transition: all 0.2s;
-    }
-    .input-glass:focus { border-color: rgba(124,58,237,0.5); background: rgba(255,255,255,0.08); }
-    .input-glass::placeholder { color: rgba(241,245,249,0.3); }
-    select.input-glass option { background: #1a1740; color: #f1f5f9; }
-    .badge-green { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-red   { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-blue  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-    .badge-purple{ background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); border-radius:6px; padding:2px 8px; font-size:0.75rem; }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/finex-system.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
-  <div class="md:flex min-h-screen">
-    <aside class="w-full md:w-64 glass border-b md:border-b-0 md:border-r border-white/10 md:flex md:flex-col md:fixed md:h-full z-30" id="sidebar">
-      <div class="p-4 md:p-6 border-b border-white/10">
+<body class="overflow-x-hidden">
+  <div class="md:flex min-h-screen relative">
+    <aside class="shell-sidebar w-full md:w-72 border-b md:border-b-0 md:border-r border-white/10 md:flex md:flex-col md:fixed md:h-full z-30" id="sidebar">
+      <div class="px-5 py-5 md:px-6 md:py-6 border-b border-white/10">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
-            <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-[0_16px_36px_rgba(47,125,244,0.35)]" style="background:linear-gradient(135deg,#2f7df4,#61b6ff)">
+            <i data-lucide="orbit" class="w-5 h-5 text-white"></i>
           </div>
           <div>
-            <p class="font-bold text-white text-sm">FinanceFlow</p>
-            <p class="text-xs" style="color:rgba(241,245,249,0.4)">Controle financeiro</p>
+            <p class="brand-wordmark text-xl leading-none text-white">FinanceFlow</p>
+            <p class="text-[11px] uppercase tracking-[0.24em]" style="color:rgba(245,247,251,0.38)">Operating System</p>
           </div>
         </div>
       </div>
 
       <nav class="p-4 space-y-1 overflow-y-auto">
         {% with request.resolver_match.url_name as url_name %}
-        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if url_name == 'dashboard' %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'dashboard' %}" class="nav-link {% if url_name == 'dashboard' %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i> Dashboard
         </a>
-        <a href="{% url 'transaction_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'transaction' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'transaction_list' %}" class="nav-link {% if 'transaction' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="arrow-left-right" class="w-4 h-4 shrink-0"></i> Transações
         </a>
-        <a href="{% url 'account_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'account' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'account_list' %}" class="nav-link {% if 'account' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i> Contas
         </a>
-        <a href="{% url 'card_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'card' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'card_list' %}" class="nav-link {% if 'card' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i> Cartões
         </a>
-        <a href="{% url 'portfolio_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'investment' in url_name or 'portfolio' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i> Investimentos
+        <a href="{% url 'portfolio_dashboard' %}" class="nav-link {% if 'investment' in url_name or 'portfolio' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
+          <i data-lucide="activity" class="w-4 h-4 shrink-0"></i> Investimentos
         </a>
-        <a href="{% url 'budget_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'budget' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'budget_list' %}" class="nav-link {% if 'budget' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="target" class="w-4 h-4 shrink-0"></i> Orçamentos
         </a>
-        <a href="{% url 'reports_home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'report' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
-          <i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i> Relatórios
+        <a href="{% url 'reports_home' %}" class="nav-link {% if 'report' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i> Relatórios
         </a>
-        <a href="{% url 'category_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm {% if 'category' in url_name %}glass text-white font-medium{% else %}text-slate-400 hover:text-white hover:bg-white/5{% endif %}">
+        <a href="{% url 'category_list' %}" class="nav-link {% if 'category' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="tags" class="w-4 h-4 shrink-0"></i> Categorias
         </a>
         {% endwith %}
       </nav>
 
-      <div class="p-4 border-t border-white/10 mt-auto">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
+      <div class="p-4 mt-auto border-t border-white/10">
+        <div class="glass rounded-3xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-[0_10px_24px_rgba(47,125,244,0.3)]" style="background:linear-gradient(135deg,#2f7df4,#61b6ff)">
             {{ request.user.first_name|first|upper }}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">{{ request.user.get_full_name }}</p>
-            <p class="text-xs truncate" style="color:rgba(241,245,249,0.4)">{{ family_group.name|default:"Sem grupo" }}</p>
+            <p class="text-sm font-semibold text-white truncate">{{ request.user.get_full_name }}</p>
+            <p class="text-[11px] uppercase tracking-[0.18em] truncate" style="color:rgba(245,247,251,0.38)">{{ family_group.name|default:"Sem grupo" }}</p>
           </div>
           <a href="{% url 'logout' %}" class="text-slate-400 hover:text-white transition-colors">
             <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -123,24 +77,28 @@
       </div>
     </aside>
 
-    <main class="flex-1 md:ml-64 min-h-screen">
-      <header class="sticky top-0 z-20 glass border-b border-white/10 px-4 md:px-6 py-4 flex items-center justify-between">
+    <main class="flex-1 md:ml-72 min-h-screen">
+      <header class="shell-topbar sticky top-0 z-20 border-b border-white/10 px-4 md:px-8 py-5 flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-lg font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h1>
-          <p class="text-xs" style="color:rgba(241,245,249,0.4)">{% block page_subtitle %}{% endblock %}</p>
+          <p class="text-[11px] uppercase tracking-[0.28em] mb-2" style="color:rgba(245,247,251,0.38)">FinanceOS</p>
+          <h1 class="page-display text-3xl md:text-4xl leading-none text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+          <p class="text-sm mt-2 max-w-xl" style="color:rgba(245,247,251,0.56)">{% block page_subtitle %}{% endblock %}</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center justify-end gap-3">
           {% block topbar_actions %}{% endblock %}
-          <a href="{% url 'profile' %}" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background:linear-gradient(135deg,#7c3aed,#3b82f6)">
-            {{ request.user.first_name|first|upper }}
+          <a href="{% url 'profile' %}" class="glass rounded-full px-4 py-2 flex items-center gap-3">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-[0_10px_24px_rgba(47,125,244,0.3)]" style="background:linear-gradient(135deg,#2f7df4,#61b6ff)">
+              {{ request.user.first_name|first|upper }}
+            </span>
+            <span class="hidden md:block text-xs uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.58)">Perfil</span>
           </a>
         </div>
       </header>
 
-      <div class="p-4 md:p-6">
+      <div class="p-4 md:p-8 space-y-6">
         {% if messages %}
           {% for message in messages %}
-            <div class="mb-4 px-4 py-3 rounded-xl text-sm glass border {% if message.tags == 'success' %}border-green-500/30 text-green-400{% elif message.tags == 'error' %}border-red-500/30 text-red-400{% else %}border-blue-500/30 text-blue-400{% endif %}" x-data="{show:true}" x-show="show" x-init="setTimeout(()=>show=false,4000)">
+            <div class="glass rounded-2xl px-4 py-3 text-sm border {% if message.tags == 'success' %}border-emerald-400/25 text-emerald-300{% elif message.tags == 'error' %}border-rose-400/25 text-rose-300{% else %}border-sky-400/25 text-sky-300{% endif %}" x-data="{show:true}" x-show="show" x-init="setTimeout(()=>show=false,4000)">
               {{ message }}
             </div>
           {% endfor %}
@@ -158,4 +116,3 @@
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>
-

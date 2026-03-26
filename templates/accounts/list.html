@@ -1,55 +1,34 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load humanize %}
 {% block title %}Contas - FinanceFlow{% endblock %}
 {% block page_title %}Contas financeiras{% endblock %}
+{% block page_subtitle %}Estrutura de caixa, liquidez e visão consolidada das contas{% endblock %}
 {% block topbar_actions %}
+<a href="{% url 'transfer' %}" class="btn-ghost">Transferência entre contas</a>
 <a href="{% url 'account_create' %}" class="btn-primary">Nova conta</a>
 {% endblock %}
 {% block content %}
 <div class="grid lg:grid-cols-3 gap-4 mb-6">
-  <div class="glass rounded-2xl p-5 lg:col-span-2">
-    <h3 class="font-semibold mb-4">Minhas contas</h3>
+  <div class="glass rounded-[1.75rem] p-5 lg:col-span-2">
+    <div class="mb-4">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Estrutura</p>
+      <h3 class="page-display text-2xl text-white">Minhas contas</h3>
+    </div>
     <div id="accounts-grid" class="grid md:grid-cols-2 gap-3">
       {% for account in accounts %}
         {% include 'accounts/partials/account_card.html' with account=account %}
       {% empty %}
-        <p class="text-slate-400 text-sm">Nenhuma conta cadastrada.</p>
+        <div class="glass rounded-[1.5rem] p-8 text-center md:col-span-2">
+          <p class="text-sm mb-4" style="color:rgba(245,247,251,0.42)">Nenhuma conta cadastrada.</p>
+          <a href="{% url 'account_create' %}" class="btn-primary inline-flex">Cadastrar primeira conta</a>
+        </div>
       {% endfor %}
     </div>
   </div>
-  <div class="glass rounded-2xl p-5">
-    <h3 class="font-semibold mb-4">Saldo total</h3>
-    <p class="text-3xl font-bold">R$ {{ total_balance|floatformat:2|intcomma }}</p>
-  </div>
-</div>
-
-<div class="grid lg:grid-cols-2 gap-4">
-  <div class="glass rounded-2xl p-5">
-    <h3 class="font-semibold mb-4">Criar/editar conta</h3>
-    <form method="post" action="{% if editing %}{% url 'account_edit' editing.pk %}{% else %}{% url 'account_create' %}{% endif %}" class="space-y-3">
-      {% csrf_token %}
-      {% for field in form %}
-        <div>
-          <label class="text-xs text-slate-300">{{ field.label }}</label>
-          {{ field }}
-        </div>
-      {% endfor %}
-      <button class="btn-primary" type="submit">Salvar conta</button>
-    </form>
-  </div>
-  <div class="glass rounded-2xl p-5">
-    <h3 class="font-semibold mb-4">Transferência entre contas</h3>
-    <form method="post" action="{% url 'transfer' %}" class="space-y-3">
-      {% csrf_token %}
-      {% for field in transfer_form %}
-        <div>
-          <label class="text-xs text-slate-300">{{ field.label }}</label>
-          {{ field }}
-        </div>
-      {% endfor %}
-      <button class="btn-primary" type="submit">Transferir</button>
-    </form>
+  <div class="glass metric-card rounded-[1.75rem] p-5">
+    <p class="text-[11px] uppercase tracking-[0.2em] mb-2" style="color:rgba(245,247,251,0.42)">Saldo total</p>
+    <p class="text-4xl font-bold text-white">R$ {{ total_balance|floatformat:2|intcomma }}</p>
+    <p class="text-xs mt-3 uppercase tracking-[0.18em]" style="color:rgba(245,247,251,0.36)">{{ accounts|length }} conta{{ accounts|length|pluralize }}</p>
   </div>
 </div>
 {% endblock %}
-

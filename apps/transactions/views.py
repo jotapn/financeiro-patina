@@ -12,17 +12,16 @@ from .forms import TransactionForm
 from .models import Transaction
 
 
-@login_required
-def transaction_list(request):
-    group = request.user.profile.family_group
+def _build_transaction_list_context(group, *, filters=None):
     qs = Transaction.objects.filter(family_group=group).select_related(
         'category', 'account', 'credit_card', 'user'
     )
 
-    tx_type = request.GET.get('type')
-    period = request.GET.get('period', 'current_month')
-    category_id = request.GET.get('category')
-    search = request.GET.get('q')
+    filters = filters or {}
+    tx_type = filters.get('type')
+    period = filters.get('period', 'current_month')
+    category_id = filters.get('category')
+    search = filters.get('q')
 
     today = date.today()
     if period == 'current_month':
@@ -48,20 +47,34 @@ def transaction_list(request):
         income=Sum('amount', filter=Q(transaction_type='income')),
         expense=Sum('amount', filter=Q(transaction_type='expense')),
     )
-
     categories = Category.objects.filter(Q(family_group=group) | Q(is_system=True)).order_by('name')
 
-    return render(
-        request,
-        'transactions/list.html',
-        {
-            'transactions': qs.order_by('-date', '-created_at'),
-            'totals': totals,
-            'categories': categories,
-            'filters': {'type': tx_type, 'period': period, 'category': category_id, 'q': search},
-            'form': TransactionForm(family_group=group),
+    return {
+        'transactions': qs.order_by('-date', '-created_at'),
+        'totals': totals,
+        'categories': categories,
+        'filters': {
+            'type': tx_type,
+            'period': period,
+            'category': category_id,
+            'q': search,
+        },
+    }
+
+
+@login_required
+def transaction_list(request):
+    group = request.user.profile.family_group
+    context = _build_transaction_list_context(
+        group,
+        filters={
+            'type': request.GET.get('type'),
+            'period': request.GET.get('period', 'current_month'),
+            'category': request.GET.get('category'),
+            'q': request.GET.get('q'),
         },
     )
+    return render(request, 'transactions/list.html', context)
 
 
 @login_required
@@ -82,7 +95,8 @@ def transaction_create(request):
             return redirect('transaction_list')
     else:
         form = TransactionForm(family_group=group)
-    return render(request, 'transactions/list.html', {'form': form, 'show_modal': True})
+
+    return render(request, 'transactions/form.html', {'form': form, 'editing': None})
 
 
 @login_required
@@ -98,7 +112,8 @@ def transaction_edit(request, pk):
             return redirect('transaction_list')
     else:
         form = TransactionForm(instance=tx, family_group=group)
-    return render(request, 'transactions/list.html', {'form': form, 'show_modal': True, 'editing': tx})
+
+    return render(request, 'transactions/form.html', {'form': form, 'editing': tx})
 
 
 @login_required

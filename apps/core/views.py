@@ -22,7 +22,12 @@ def register(request):
             user = form.save()
             group = FamilyGroup.objects.create(name=f'Fam\u00edlia de {user.first_name}')
             UserProfile.objects.create(user=user, family_group=group, role='admin')
-            for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('D\u00e9bito', 'debit')]:
+            for name, mtype in [
+                ('PIX', 'pix'),
+                ('Dinheiro', 'cash'),
+                ('D\u00e9bito', 'debit'),
+                ('Cart\u00e3o de Cr\u00e9dito', 'credit'),
+            ]:
                 PaymentMethod.objects.create(
                     family_group=group,
                     name=name,

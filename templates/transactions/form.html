@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Editar transacao{% else %}Nova transacao{% endif %} - FinanceFlow{% endblock %}
+{% block page_title %}{% if editing %}Editar transacao{% else %}Nova transacao{% endif %}{% endblock %}
+{% block page_subtitle %}Registre entradas, saidas e movimentacoes com todos os detalhes operacionais{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'transaction_list' %}" class="btn-ghost">Voltar para transacoes</a>
+{% endblock %}
+{% block content %}
+<div class="max-w-5xl">
+  <div
+    class="glass rounded-[1.75rem] p-6 md:p-7"
+    x-data="{
+      transactionType: '{{ form.transaction_type.value|default:'' }}',
+      transactionStatus: '{{ form.status.value|default:'paid' }}',
+      selectedPaymentMethod: '{{ form.payment_method.value|default:'' }}',
+      selectedCategory: '{{ form.category.value|default:'' }}',
+      selectedCard: '{{ form.credit_card.value|default:'' }}',
+      paymentType: '',
+      updatePaymentType() {
+        const select = this.$refs.paymentMethodSelect;
+        if (!select || select.selectedIndex < 0) {
+          this.paymentType = '';
+          return;
+        }
+
+        const option = select.options[select.selectedIndex];
+        this.paymentType = option ? (option.dataset.methodType || '') : '';
+      },
+      filterPaymentMethods() {
+        const select = this.$refs.paymentMethodSelect;
+        if (!select) return;
+
+        let keepSelected = false;
+
+        Array.from(select.options).forEach((option) => {
+          if (!option.value) {
+            option.hidden = false;
+            return;
+          }
+
+          const isCredit = option.dataset.methodType === 'credit';
+          const hidden = this.transactionType === 'income' && isCredit;
+          option.hidden = hidden;
+
+          if (!hidden && option.value === this.selectedPaymentMethod) {
+            keepSelected = true;
+          }
+        });
+
+        if (!keepSelected) {
+          select.value = '';
+          this.selectedPaymentMethod = '';
+        }
+
+        this.updatePaymentType();
+      },
+      filterSubcategories() {
+        const select = this.$refs.subcategorySelect;
+        if (!select) return;
+
+        const currentValue = select.value;
+        let keepSelected = false;
+
+        Array.from(select.options).forEach((option) => {
+          if (!option.value) {
+            option.hidden = false;
+            return;
+          }
+
+          const matchesCategory = !this.selectedCategory || option.dataset.categoryId === this.selectedCategory;
+          option.hidden = !matchesCategory;
+          if (matchesCategory && option.value === currentValue) {
+            keepSelected = true;
+          }
+        });
+
+        if (!keepSelected) {
+          select.value = '';
+        }
+      },
+    }"
+    x-init="filterPaymentMethods(); filterSubcategories()"
+  >
+    <div class="mb-6">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Lancamento</p>
+      <h3 class="page-display text-2xl text-white">{% if editing %}Atualizar transacao{% else %}Criar transacao{% endif %}</h3>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="{% if editing %}{% url 'transaction_edit' editing.pk %}{% else %}{% url 'transaction_create' %}{% endif %}" class="space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ form.description.label }}</label>
+          <div class="mt-2">{{ form.description }}</div>
+          {% if form.description.errors %}<p class="text-xs text-red-300 mt-2">{{ form.description.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.transaction_type.label }}</label>
+          <div class="mt-2">{{ form.transaction_type }}</div>
+          {% if form.transaction_type.errors %}<p class="text-xs text-red-300 mt-2">{{ form.transaction_type.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.amount.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ form.amount }}
+          </div>
+          {% if form.amount.errors %}<p class="text-xs text-red-300 mt-2">{{ form.amount.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.date.label }}</label>
+          <div class="mt-2">{{ form.date }}</div>
+          {% if form.date.errors %}<p class="text-xs text-red-300 mt-2">{{ form.date.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.payment_method.label }}</label>
+          <div class="mt-2">{{ form.payment_method }}</div>
+          {% if form.payment_method.errors %}<p class="text-xs text-red-300 mt-2">{{ form.payment_method.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="paymentType !== 'credit'" x-cloak>
+          <label>{{ form.account.label }}</label>
+          <div class="mt-2">{{ form.account }}</div>
+          {% if form.account.errors %}<p class="text-xs text-red-300 mt-2">{{ form.account.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="paymentType === 'credit'" x-cloak>
+          <label>{{ form.credit_card.label }}</label>
+          <div class="mt-2">{{ form.credit_card }}</div>
+          {% if form.credit_card.errors %}<p class="text-xs text-red-300 mt-2">{{ form.credit_card.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.category.label }}</label>
+          <div class="mt-2">{{ form.category }}</div>
+          {% if form.category.errors %}<p class="text-xs text-red-300 mt-2">{{ form.category.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.subcategory.label }}</label>
+          <div class="mt-2">{{ form.subcategory }}</div>
+          {% if form.subcategory.errors %}<p class="text-xs text-red-300 mt-2">{{ form.subcategory.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.location.label }}</label>
+          <div class="mt-2">{{ form.location }}</div>
+          {% if form.location.errors %}<p class="text-xs text-red-300 mt-2">{{ form.location.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="transactionType === 'expense' && paymentType === 'credit' && selectedCard" x-cloak>
+          <label>{{ form.installment_total.label }}</label>
+          <div class="mt-2">{{ form.installment_total }}</div>
+          {% if form.installment_total.errors %}<p class="text-xs text-red-300 mt-2">{{ form.installment_total.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="transactionType === 'expense' && paymentType === 'credit' && selectedCard" x-cloak>
+          <label>{{ form.installment_number.label }}</label>
+          <div class="mt-2">{{ form.installment_number }}</div>
+          {% if form.installment_number.errors %}<p class="text-xs text-red-300 mt-2">{{ form.installment_number.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="paymentType !== 'credit'" x-cloak>
+          <label>{{ form.status.label }}</label>
+          <div class="mt-2">{{ form.status }}</div>
+          {% if form.status.errors %}<p class="text-xs text-red-300 mt-2">{{ form.status.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div x-show="paymentType !== 'credit' && (transactionStatus === 'pending' || transactionStatus === 'scheduled')" x-cloak>
+          <label>{{ form.due_date.label }}</label>
+          <div class="mt-2">{{ form.due_date }}</div>
+          {% if form.due_date.errors %}<p class="text-xs text-red-300 mt-2">{{ form.due_date.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ form.notes.label }}</label>
+          <div class="mt-2">{{ form.notes }}</div>
+          {% if form.notes.errors %}<p class="text-xs text-red-300 mt-2">{{ form.notes.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ form.tags.label }}</label>
+          <div class="mt-2">{{ form.tags }}</div>
+          {% if form.tags.errors %}<p class="text-xs text-red-300 mt-2">{{ form.tags.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ form.receipt_image.label }}</label>
+          <div class="mt-2">{{ form.receipt_image }}</div>
+          {% if form.receipt_image.errors %}<p class="text-xs text-red-300 mt-2">{{ form.receipt_image.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-2" style="color:rgba(245,247,251,0.38)">Resumo</p>
+        <p class="text-sm" style="color:rgba(245,247,251,0.6)">Quando o metodo for credito, o formulario passa a trabalhar com o cartao. Para os demais metodos, a movimentacao segue pela conta selecionada.</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="{% url 'transaction_list' %}" class="btn-ghost">Cancelar</a>
+        <button class="btn-primary" type="submit">{% if editing %}Salvar alteracoes{% else %}Salvar transacao{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
