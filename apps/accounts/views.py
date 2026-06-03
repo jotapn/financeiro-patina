@@ -11,7 +11,11 @@ from .models import FinancialAccount
 @login_required
 def account_list(request):
     group = request.user.profile.family_group
-    accounts = FinancialAccount.objects.filter(family_group=group, is_active=True).select_related('owner')
+    accounts = list(
+        FinancialAccount.objects.filter(family_group=group, is_active=True)
+        .select_related('owner')
+        .with_current_balance()
+    )
     total_balance = sum(a.current_balance for a in accounts if a.include_in_total)
     return render(
         request,
@@ -19,8 +23,6 @@ def account_list(request):
         {
             'accounts': accounts,
             'total_balance': total_balance,
-            'form': FinancialAccountForm(),
-            'transfer_form': TransferForm(family_group=group),
         },
     )
 
@@ -36,19 +38,25 @@ def account_create(request):
             account.owner = request.user
             account.family_group = group
             account.save()
-            if request.htmx:
-                return render(request, 'accounts/partials/account_card.html', {'account': account})
             messages.success(request, 'Conta criada com sucesso!')
             return redirect('account_list')
     else:
         form = FinancialAccountForm()
-    return render(request, 'accounts/list.html', {'form': form, 'show_modal': True})
+
+    return render(
+        request,
+        'accounts/form.html',
+        {
+            'form': form,
+            'editing': None,
+        },
+    )
 
 
 @login_required
 def account_detail(request, pk):
     group = request.user.profile.family_group
-    account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
+    account = get_object_or_404(FinancialAccount.objects.with_current_balance(), pk=pk, family_group=group)
     transactions = account.transactions.select_related('category', 'user').order_by('-date')[:20]
     return render(request, 'accounts/detail.html', {'account': account, 'transactions': transactions})
 
@@ -66,15 +74,13 @@ def account_edit(request, pk):
             return redirect('account_list')
     else:
         form = FinancialAccountForm(instance=account)
+
     return render(
         request,
-        'accounts/list.html',
+        'accounts/form.html',
         {
             'form': form,
-            'show_modal': True,
             'editing': account,
-            'accounts': FinancialAccount.objects.filter(family_group=group, is_active=True),
-            'transfer_form': TransferForm(family_group=group),
         },
     )
 
@@ -101,7 +107,7 @@ def transfer(request):
             from apps.categories.models import Category
             from apps.transactions.models import Transaction
 
-            transfer_cat = Category.objects.filter(name='Transferência', is_system=True).first() or Category.objects.filter(
+            transfer_cat = Category.objects.filter(name='Transfer\u00eancia', is_system=True).first() or Category.objects.filter(
                 is_system=True
             ).first()
             data = form.cleaned_data
@@ -111,14 +117,21 @@ def transfer(request):
                 account=data['from_account'],
                 destination_account=data['to_account'],
                 category=transfer_cat,
-                description=data.get('description', 'Transferência'),
+                description=data.get('description', 'Transfer\u00eancia'),
                 amount=data['amount'],
                 transaction_type='transfer',
                 date=data['date'],
                 status='paid',
             )
-            messages.success(request, 'Transferência realizada!')
+            messages.success(request, 'Transfer\u00eancia realizada!')
             return redirect('account_list')
     else:
         form = TransferForm(family_group=group)
-    return render(request, 'accounts/list.html', {'transfer_form': form, 'show_transfer': True})
+
+    return render(
+        request,
+        'accounts/transfer.html',
+        {
+            'transfer_form': form,
+        },
+    )

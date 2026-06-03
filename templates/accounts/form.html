@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Editar conta{% else %}Nova conta{% endif %} - FinanceFlow{% endblock %}
+{% block page_title %}{% if editing %}Editar conta{% else %}Nova conta{% endif %}{% endblock %}
+{% block page_subtitle %}Configure a conta financeira e seus par&acirc;metros de saldo e exibi&ccedil;&atilde;o{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'account_list' %}" class="btn-ghost">Voltar para contas</a>
+{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="glass rounded-[1.75rem] p-6 md:p-7" x-data="{ bank: '{{ form.bank.value|default:'other' }}' }">
+    <div class="mb-6">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Cadastro</p>
+      <h3 class="page-display text-2xl text-white">{% if editing %}Atualizar conta{% else %}Criar conta{% endif %}</h3>
+    </div>
+
+    <form method="post" action="{% if editing %}{% url 'account_edit' editing.pk %}{% else %}{% url 'account_create' %}{% endif %}" class="space-y-6">
+      {% csrf_token %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ form.name.label }}</label>
+          <div class="mt-2">{{ form.name }}</div>
+          {% if form.name.errors %}<p class="text-xs text-red-300 mt-2">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.account_type.label }}</label>
+          <div class="mt-2">{{ form.account_type }}</div>
+          {% if form.account_type.errors %}<p class="text-xs text-red-300 mt-2">{{ form.account_type.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.bank.label }}</label>
+          <div class="mt-2">{{ form.bank }}</div>
+          {% if form.bank.errors %}<p class="text-xs text-red-300 mt-2">{{ form.bank.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2" x-show="bank === 'other'" x-cloak>
+          <label>{{ form.bank_custom.label }}</label>
+          <div class="mt-2">{{ form.bank_custom }}</div>
+          {% if form.bank_custom.help_text %}<p class="text-xs mt-2" style="color:rgba(245,247,251,0.42)">{{ form.bank_custom.help_text }}</p>{% endif %}
+          {% if form.bank_custom.errors %}<p class="text-xs text-red-300 mt-2">{{ form.bank_custom.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.initial_balance.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                €
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ form.initial_balance }}
+          </div>
+          {% if form.initial_balance.errors %}<p class="text-xs text-red-300 mt-2">{{ form.initial_balance.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.ownership.label }}</label>
+          <div class="mt-2">{{ form.ownership }}</div>
+          {% if form.ownership.errors %}<p class="text-xs text-red-300 mt-2">{{ form.ownership.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-[1fr_240px] gap-4">
+        <div class="glass rounded-[1.5rem] p-4">
+          <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Prefer&ecirc;ncias</p>
+          <div class="space-y-4">
+            <label class="toggle-row">
+              {{ form.include_in_total }}
+              <span class="toggle-control"></span>
+              <span>
+                <span class="block text-white text-sm font-semibold">{{ form.include_in_total.label }}</span>
+                <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Mostra esta conta no saldo consolidado do dashboard.</span>
+              </span>
+            </label>
+
+            <label class="toggle-row">
+              {{ form.is_active }}
+              <span class="toggle-control"></span>
+              <span>
+                <span class="block text-white text-sm font-semibold">{{ form.is_active.label }}</span>
+                <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Permite movimentações e exibição na listagem principal.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="glass rounded-[1.5rem] p-4">
+          <label>{{ form.color.label }}</label>
+          <div class="mt-3 flex items-center gap-4">
+            <div class="color-swatch-shell">
+              {{ form.color }}
+            </div>
+            <div>
+              <p class="text-sm text-white font-semibold">Cor da conta</p>
+              <p class="text-xs mt-1" style="color:rgba(245,247,251,0.42)">Defina um marcador visual para cards e indicadores.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="{% url 'account_list' %}" class="btn-ghost">Cancelar</a>
+        <button class="btn-primary" type="submit">{% if editing %}Salvar altera&ccedil;&otilde;es{% else %}Salvar conta{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

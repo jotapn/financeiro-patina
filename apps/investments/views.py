@@ -107,6 +107,32 @@ def investment_list(request):
     )
 
 
+def _investment_list_context(request, *, form=None, show_modal=False):
+    group = request.user.profile.family_group
+    asset_type = request.GET.get('type')
+    view_mode = request.GET.get('view', 'personal')
+
+    if view_mode == 'family':
+        qs = Investment.objects.filter(family_group=group, is_active=True)
+    else:
+        qs = Investment.objects.filter(owner=request.user, is_active=True)
+
+    if asset_type:
+        qs = qs.filter(asset_class__asset_type=asset_type)
+
+    qs = qs.select_related('asset_class', 'owner').order_by('-current_value')
+    asset_classes = AssetClass.objects.filter(is_system=True)
+
+    return {
+        'investments': qs,
+        'asset_classes': asset_classes,
+        'current_type': asset_type,
+        'view_mode': view_mode,
+        'form': form,
+        'show_modal': show_modal,
+    }
+
+
 @login_required
 @family_edit_required
 def investment_create(request):
@@ -124,7 +150,7 @@ def investment_create(request):
     else:
         form = InvestmentForm()
 
-    return render(request, 'investments/list.html', {'form': form, 'show_modal': True})
+    return render(request, 'investments/list.html', _investment_list_context(request, form=form, show_modal=True))
 
 
 @login_required

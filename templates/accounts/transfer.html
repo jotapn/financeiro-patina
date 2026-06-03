@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Transfer&ecirc;ncia entre contas - FinanceFlow{% endblock %}
+{% block page_title %}Transfer&ecirc;ncia entre contas{% endblock %}
+{% block page_subtitle %}Mova saldo entre contas da fam&iacute;lia sem poluir a listagem principal{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'account_list' %}" class="btn-ghost">Voltar para contas</a>
+<a href="{% url 'account_create' %}" class="btn-primary">Nova conta</a>
+{% endblock %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="glass rounded-[1.75rem] p-6 md:p-7">
+    <div class="mb-6">
+      <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Movimenta&ccedil;&atilde;o</p>
+      <h3 class="page-display text-2xl text-white">Transferir saldo</h3>
+    </div>
+
+    <form method="post" action="{% url 'transfer' %}" class="space-y-6">
+      {% csrf_token %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label>{{ transfer_form.from_account.label }}</label>
+          <div class="mt-2">{{ transfer_form.from_account }}</div>
+          {% if transfer_form.from_account.errors %}<p class="text-xs text-red-300 mt-2">{{ transfer_form.from_account.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ transfer_form.to_account.label }}</label>
+          <div class="mt-2">{{ transfer_form.to_account }}</div>
+          {% if transfer_form.to_account.errors %}<p class="text-xs text-red-300 mt-2">{{ transfer_form.to_account.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ transfer_form.amount.label }}</label>
+          <div class="mt-2">{{ transfer_form.amount }}</div>
+          {% if transfer_form.amount.errors %}<p class="text-xs text-red-300 mt-2">{{ transfer_form.amount.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ transfer_form.date.label }}</label>
+          <div class="mt-2">{{ transfer_form.date }}</div>
+          {% if transfer_form.date.errors %}<p class="text-xs text-red-300 mt-2">{{ transfer_form.date.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ transfer_form.description.label }}</label>
+          <div class="mt-2">{{ transfer_form.description }}</div>
+          {% if transfer_form.description.errors %}<p class="text-xs text-red-300 mt-2">{{ transfer_form.description.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-2" style="color:rgba(245,247,251,0.38)">Resumo</p>
+        <p class="text-sm" style="color:rgba(245,247,251,0.6)">A transfer&ecirc;ncia ser&aacute; registrada como movimenta&ccedil;&atilde;o interna entre contas, sem distorcer relat&oacute;rios de receita e despesa.</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="{% url 'account_list' %}" class="btn-ghost">Cancelar</a>
+        <button class="btn-primary" type="submit">Transferir</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

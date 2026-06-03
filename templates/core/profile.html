@@ -1,19 +1,129 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Perfil - FinanceFlow{% endblock %}
 {% block page_title %}Meu perfil{% endblock %}
+{% block page_subtitle %}Preferencias pessoais, moeda padrao e regras de notificacao{% endblock %}
 {% block content %}
-<div class="max-w-3xl glass rounded-2xl p-6">
-  <form method="post" enctype="multipart/form-data" class="space-y-4">
-    {% csrf_token %}
-    {% for field in form %}
-      <div>
-        <label class="block text-xs mb-2 text-slate-300">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:', ' }}</p>{% endif %}
+<div class="max-w-4xl">
+  <div class="glass rounded-[1.75rem] p-6 md:p-7">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        {{ form.non_field_errors }}
       </div>
-    {% endfor %}
-    <button type="submit" class="btn-primary">Salvar perfil</button>
-  </form>
+      {% endif %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ form.avatar.label }}</label>
+          <div class="mt-2">{{ form.avatar }}</div>
+          {% if form.avatar.errors %}<p class="text-xs text-red-300 mt-2">{{ form.avatar.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.default_currency.label }}</label>
+          <div class="mt-2">{{ form.default_currency }}</div>
+          {% if form.default_currency.errors %}<p class="text-xs text-red-300 mt-2">{{ form.default_currency.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.timezone.label }}</label>
+          <div class="mt-2">{{ form.timezone }}</div>
+          {% if form.timezone.errors %}<p class="text-xs text-red-300 mt-2">{{ form.timezone.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.financial_month_start_day.label }}</label>
+          <div class="mt-2">{{ form.financial_month_start_day }}</div>
+          {% if form.financial_month_start_day.errors %}<p class="text-xs text-red-300 mt-2">{{ form.financial_month_start_day.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.monthly_income.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ form.monthly_income }}
+          </div>
+          {% if form.monthly_income.errors %}<p class="text-xs text-red-300 mt-2">{{ form.monthly_income.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Notificacoes</p>
+        <div class="space-y-4">
+          <label class="toggle-row">
+            {{ form.notify_budget_alert }}
+            <span class="toggle-control"></span>
+            <span>
+              <span class="block text-white text-sm font-semibold">{{ form.notify_budget_alert.label }}</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Avisa quando um orcamento estiver chegando no limite.</span>
+            </span>
+          </label>
+
+          <label class="toggle-row">
+            {{ form.notify_bill_due }}
+            <span class="toggle-control"></span>
+            <span>
+              <span class="block text-white text-sm font-semibold">{{ form.notify_bill_due.label }}</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Lembra com antecedencia sobre vencimentos de fatura.</span>
+            </span>
+          </label>
+
+          <label class="toggle-row">
+            {{ form.notify_low_balance }}
+            <span class="toggle-control"></span>
+            <span>
+              <span class="block text-white text-sm font-semibold">{{ form.notify_low_balance.label }}</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Dispara um alerta quando a conta chegar perto do minimo definido.</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label>{{ form.low_balance_threshold.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ form.low_balance_threshold }}
+          </div>
+          {% if form.low_balance_threshold.errors %}<p class="text-xs text-red-300 mt-2">{{ form.low_balance_threshold.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.budget_alert_threshold.label }}</label>
+          <div class="mt-2">{{ form.budget_alert_threshold }}</div>
+          {% if form.budget_alert_threshold.errors %}<p class="text-xs text-red-300 mt-2">{{ form.budget_alert_threshold.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.bill_due_days_ahead.label }}</label>
+          <div class="mt-2">{{ form.bill_due_days_ahead }}</div>
+          {% if form.bill_due_days_ahead.errors %}<p class="text-xs text-red-300 mt-2">{{ form.bill_due_days_ahead.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button type="submit" class="btn-primary">Salvar perfil</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
-

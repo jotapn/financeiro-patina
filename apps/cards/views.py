@@ -99,22 +99,36 @@ def _generate_future_invoices(card, months=3):
         )
 
 
+def _card_summary(card):
+    invoices = sorted(card.invoices.all(), key=lambda inv: inv.reference_month)
+    current_inv = next(
+        (invoice for invoice in invoices if invoice.status == 'open'),
+        None,
+    )
+    next_inv = next(
+        (invoice for invoice in invoices if invoice.status == 'future'),
+        None,
+    )
+    available_limit = card.credit_limit - current_inv.total_amount if current_inv else card.credit_limit
+    utilization_percentage = 0
+    if card.credit_limit:
+        utilization_percentage = round(float((1 - available_limit / card.credit_limit) * 100), 1)
+
+    return {
+        'card': card,
+        'current_invoice': current_inv,
+        'next_invoice': next_inv,
+        'available_limit': available_limit,
+        'utilization_percentage': utilization_percentage,
+    }
+
+
 @login_required
 def card_list(request):
     group = request.user.profile.family_group
     cards = CreditCard.objects.filter(family_group=group, is_active=True).prefetch_related('invoices')
 
-    cards_data = []
-    for card in cards:
-        current_inv = card.invoices.filter(status='open').order_by('reference_month').first()
-        next_inv = card.invoices.filter(status='future').order_by('reference_month').first()
-        cards_data.append(
-            {
-                'card': card,
-                'current_invoice': current_inv,
-                'next_invoice': next_inv,
-            }
-        )
+    cards_data = [_card_summary(card) for card in cards]
 
     return render(request, 'cards/list.html', {'cards_data': cards_data})
 
@@ -137,15 +151,7 @@ def card_create(request):
         form = CreditCardForm(family_group=group)
 
     cards = CreditCard.objects.filter(family_group=group, is_active=True).prefetch_related('invoices')
-    cards_data = []
-    for card in cards:
-        cards_data.append(
-            {
-                'card': card,
-                'current_invoice': card.invoices.filter(status='open').order_by('reference_month').first(),
-                'next_invoice': card.invoices.filter(status='future').order_by('reference_month').first(),
-            }
-        )
+    cards_data = [_card_summary(card) for card in cards]
     return render(request, 'cards/list.html', {'form': form, 'show_modal': True, 'cards_data': cards_data})
 
 

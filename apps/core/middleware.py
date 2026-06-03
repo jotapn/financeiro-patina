@@ -18,11 +18,28 @@ class EnsureUserProfileMiddleware:
                 group = FamilyGroup.objects.create(name=f'Fam\u00edlia de {owner_name}')
                 profile.family_group = group
                 profile.save(update_fields=['family_group'])
-                for name, mtype in [('PIX', 'pix'), ('Dinheiro', 'cash'), ('D\u00e9bito', 'debit')]:
+                for name, mtype in [
+                    ('PIX', 'pix'),
+                    ('Dinheiro', 'cash'),
+                    ('D\u00e9bito', 'debit'),
+                    ('Cart\u00e3o de Cr\u00e9dito', 'credit'),
+                ]:
                     PaymentMethod.objects.get_or_create(
                         family_group=group,
                         name=name,
                         defaults={'method_type': mtype, 'is_default': (mtype == 'pix')},
+                    )
+            elif profile.family_group is not None:
+                for name, mtype in [
+                    ('PIX', 'pix'),
+                    ('Dinheiro', 'cash'),
+                    ('D\u00e9bito', 'debit'),
+                    ('Cart\u00e3o de Cr\u00e9dito', 'credit'),
+                ]:
+                    PaymentMethod.objects.get_or_create(
+                        family_group=profile.family_group,
+                        method_type=mtype,
+                        defaults={'name': name, 'is_default': (mtype == 'pix')},
                     )
 
         response = self.get_response(request)

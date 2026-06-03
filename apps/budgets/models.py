@@ -38,6 +38,9 @@ class Budget(models.Model):
 
     @property
     def spent_amount(self):
+        if hasattr(self, '_spent_amount'):
+            return self._spent_amount
+
         if not self.category_id:
             return Decimal('0')
         from apps.transactions.models import Transaction
