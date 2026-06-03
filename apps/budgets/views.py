@@ -1,9 +1,11 @@
 from datetime import date
+from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.categories.models import Category
@@ -20,13 +22,54 @@ def _get_transfer_category():
     ).first()
 
 
+def _attach_spending_to_budgets(budgets, group, ref_month):
+    budgets = list(budgets)
+    category_ids = [budget.category_id for budget in budgets if budget.category_id]
+    if not category_ids:
+        for budget in budgets:
+            budget._spent_amount = Decimal('0')
+        return budgets
+
+    base_qs = Transaction.objects.filter(
+        family_group=group,
+        category_id__in=category_ids,
+        transaction_type='expense',
+        date__year=ref_month.year,
+        date__month=ref_month.month,
+        status='paid',
+        is_ignored=False,
+    )
+    family_totals = {
+        item['category_id']: item['total'] or Decimal('0')
+        for item in base_qs.values('category_id').annotate(total=Sum('amount'))
+    }
+    personal_totals = {
+        (item['category_id'], item['user_id']): item['total'] or Decimal('0')
+        for item in base_qs.values('category_id', 'user_id').annotate(total=Sum('amount'))
+    }
+
+    for budget in budgets:
+        if not budget.category_id:
+            budget._spent_amount = Decimal('0')
+        elif budget.scope == 'personal':
+            budget._spent_amount = personal_totals.get((budget.category_id, budget.owner_id), Decimal('0'))
+        else:
+            budget._spent_amount = family_totals.get(budget.category_id, Decimal('0'))
+
+    return budgets
+
+
 @login_required
 def budget_list(request):
     group = request.user.profile.family_group
     today = date.today()
     ref = today.replace(day=1)
 
-    budgets = Budget.objects.filter(family_group=group, reference_month=ref).select_related('category')
+    budgets = _attach_spending_to_budgets(
+        Budget.objects.filter(family_group=group, reference_month=ref).select_related('category'),
+        group,
+        ref,
+    )
     goals = FinancialGoal.objects.filter(family_group=group, is_completed=False).select_related('linked_account')
 
     return render(
@@ -56,14 +99,17 @@ def budget_create(request):
     else:
         form = BudgetForm(family_group=group)
 
-    budgets = Budget.objects.filter(family_group=group, reference_month=date.today().replace(day=1)).select_related(
-        'category'
+    ref = date.today().replace(day=1)
+    budgets = _attach_spending_to_budgets(
+        Budget.objects.filter(family_group=group, reference_month=ref).select_related('category'),
+        group,
+        ref,
     )
     goals = FinancialGoal.objects.filter(family_group=group, is_completed=False).select_related('linked_account')
     return render(
         request,
         'budgets/list.html',
-        {'form': form, 'show_modal': True, 'budgets': budgets, 'goals': goals, 'ref_month': date.today().replace(day=1)},
+        {'form': form, 'show_modal': True, 'budgets': budgets, 'goals': goals, 'ref_month': ref},
     )
 
 
@@ -113,8 +159,11 @@ def goal_create(request):
     else:
         form = GoalForm(family_group=group)
 
-    budgets = Budget.objects.filter(family_group=group, reference_month=date.today().replace(day=1)).select_related(
-        'category'
+    ref = date.today().replace(day=1)
+    budgets = _attach_spending_to_budgets(
+        Budget.objects.filter(family_group=group, reference_month=ref).select_related('category'),
+        group,
+        ref,
     )
     goals = FinancialGoal.objects.filter(family_group=group, is_completed=False).select_related('linked_account')
     return render(
@@ -125,7 +174,7 @@ def goal_create(request):
             'show_goal_modal': True,
             'budgets': budgets,
             'goals': goals,
-            'ref_month': date.today().replace(day=1),
+            'ref_month': ref,
         },
     )
 

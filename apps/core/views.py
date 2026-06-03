@@ -1,6 +1,7 @@
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
+from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -81,6 +82,8 @@ def dashboard(request):
         transactions_qs = Transaction.objects.filter(user=request.user)
         accounts_qs = FinancialAccount.objects.filter(owner=request.user, is_active=True)
 
+    accounts = list(accounts_qs.with_current_balance())
+
     month_transactions = transactions_qs.filter(
         date__year=today.year,
         date__month=today.month,
@@ -94,7 +97,7 @@ def dashboard(request):
         't'
     ] or Decimal('0')
 
-    total_balance = sum(acc.current_balance for acc in accounts_qs if acc.include_in_total)
+    total_balance = sum(acc.current_balance for acc in accounts if acc.include_in_total)
 
     recent_transactions = transactions_qs.select_related('category', 'account', 'user').order_by(
         '-date', '-created_at'
@@ -102,7 +105,7 @@ def dashboard(request):
 
     chart_data = []
     for i in range(5, -1, -1):
-        month_date = today.replace(day=1) - timedelta(days=i * 30)
+        month_date = today.replace(day=1) - relativedelta(months=i)
         m_inc = transactions_qs.filter(
             date__year=month_date.year,
             date__month=month_date.month,
@@ -117,19 +120,27 @@ def dashboard(request):
         ).aggregate(t=Sum('amount'))['t'] or 0
         chart_data.append({'month': month_date.strftime('%b'), 'income': float(m_inc), 'expense': float(m_exp)})
 
-    category_data = month_transactions.filter(transaction_type='expense').values(
+    category_data_qs = month_transactions.filter(transaction_type='expense').values(
         'category__name', 'category__color'
     ).annotate(total=Sum('amount')).order_by('-total')[:6]
+    category_data = [
+        {
+            'category__name': item['category__name'],
+            'category__color': item['category__color'],
+            'total': float(item['total'] or 0),
+        }
+        for item in category_data_qs
+    ]
 
     context = {
         'total_balance': total_balance,
         'monthly_income': monthly_income,
         'monthly_expense': monthly_expense,
         'monthly_savings': monthly_income - monthly_expense,
-        'accounts': accounts_qs[:5],
+        'accounts': accounts[:5],
         'recent_transactions': recent_transactions,
         'chart_data': chart_data,
-        'category_data': list(category_data),
+        'category_data': category_data,
         'view_mode': view_mode,
         'today': today,
     }

@@ -25,9 +25,47 @@ class CreditCardForm(forms.ModelForm):
             'annual_fee',
             'ownership',
         ]
+        labels = {
+            'name': 'Nome do cartao',
+            'brand': 'Bandeira',
+            'last_four_digits': 'Ultimos 4 digitos',
+            'holder_name': 'Nome impresso',
+            'credit_limit': 'Limite de credito',
+            'closing_day': 'Dia do fechamento',
+            'due_day': 'Dia do vencimento',
+            'debit_account': 'Conta de pagamento',
+            'color_from': 'Cor inicial',
+            'color_to': 'Cor final',
+            'cashback_percentage': 'Cashback (%)',
+            'annual_fee': 'Anuidade',
+            'ownership': 'Titularidade',
+        }
         widgets = {
+            'name': forms.TextInput(attrs={'class': 'input-glass', 'placeholder': 'Ex.: Nubank Ultravioleta'}),
+            'brand': forms.Select(attrs={'class': 'input-glass'}),
+            'last_four_digits': forms.TextInput(
+                attrs={'class': 'input-glass', 'placeholder': '0000', 'maxlength': '4', 'inputmode': 'numeric'}
+            ),
+            'holder_name': forms.TextInput(attrs={'class': 'input-glass', 'placeholder': 'Nome como aparece no cartao'}),
+            'credit_limit': forms.NumberInput(
+                attrs={'class': 'input-glass input-with-prefix', 'placeholder': '0.00', 'step': '0.01'}
+            ),
+            'closing_day': forms.NumberInput(
+                attrs={'class': 'input-glass', 'placeholder': 'Ex.: 20', 'min': '1', 'max': '31'}
+            ),
+            'due_day': forms.NumberInput(
+                attrs={'class': 'input-glass', 'placeholder': 'Ex.: 28', 'min': '1', 'max': '31'}
+            ),
+            'debit_account': forms.Select(attrs={'class': 'input-glass'}),
             'color_from': forms.TextInput(attrs={'type': 'color'}),
             'color_to': forms.TextInput(attrs={'type': 'color'}),
+            'cashback_percentage': forms.NumberInput(
+                attrs={'class': 'input-glass', 'placeholder': '0.00', 'step': '0.01'}
+            ),
+            'annual_fee': forms.NumberInput(
+                attrs={'class': 'input-glass input-with-prefix', 'placeholder': '0.00', 'step': '0.01'}
+            ),
+            'ownership': forms.Select(attrs={'class': 'input-glass'}),
         }
 
     def __init__(self, *args, family_group=None, **kwargs):
@@ -35,8 +73,9 @@ class CreditCardForm(forms.ModelForm):
         if family_group:
             self.fields['debit_account'].queryset = FinancialAccount.objects.filter(
                 family_group=family_group, is_active=True
-            )
+            ).order_by('name')
         self.fields['debit_account'].required = False
+        self.fields['debit_account'].empty_label = 'Selecione a conta'
 
 
 class InvoicePaymentForm(forms.Form):

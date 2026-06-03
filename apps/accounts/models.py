@@ -1,7 +1,65 @@
 ﻿from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum
+from django.db.models import DecimalField, ExpressionWrapper, F, OuterRef, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
+
+
+MONEY_FIELD = DecimalField(max_digits=15, decimal_places=2)
+
+
+class FinancialAccountQuerySet(models.QuerySet):
+    def with_current_balance(self):
+        from apps.transactions.models import Transaction
+
+        zero = Value(Decimal('0'), output_field=MONEY_FIELD)
+
+        def account_sum(**filters):
+            return Coalesce(
+                Subquery(
+                    Transaction.objects.filter(account=OuterRef('pk'), status='paid', **filters)
+                    .order_by()
+                    .values('account')
+                    .annotate(total=Sum('amount'))
+                    .values('total')[:1],
+                    output_field=MONEY_FIELD,
+                ),
+                zero,
+                output_field=MONEY_FIELD,
+            )
+
+        transfer_in = Coalesce(
+            Subquery(
+                Transaction.objects.filter(
+                    destination_account=OuterRef('pk'),
+                    transaction_type='transfer',
+                    status='paid',
+                )
+                .order_by()
+                .values('destination_account')
+                .annotate(total=Sum('amount'))
+                .values('total')[:1],
+                output_field=MONEY_FIELD,
+            ),
+            zero,
+            output_field=MONEY_FIELD,
+        )
+
+        return self.annotate(
+            _income_total=account_sum(transaction_type='income'),
+            _expense_total=account_sum(transaction_type='expense'),
+            _transfer_out_total=account_sum(transaction_type='transfer'),
+            _transfer_in_total=transfer_in,
+        ).annotate(
+            _current_balance=ExpressionWrapper(
+                F('initial_balance')
+                + F('_income_total')
+                - F('_expense_total')
+                + F('_transfer_in_total')
+                - F('_transfer_out_total'),
+                output_field=MONEY_FIELD,
+            )
+        )
 
 
 class FinancialAccount(models.Model):
@@ -46,6 +104,8 @@ class FinancialAccount(models.Model):
     include_in_total = models.BooleanField(default=True, verbose_name='Incluir no total')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = FinancialAccountQuerySet.as_manager()
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Conta Financeira'
@@ -62,6 +122,9 @@ class FinancialAccount(models.Model):
 
     @property
     def current_balance(self):
+        if hasattr(self, '_current_balance'):
+            return self._current_balance
+
         from apps.transactions.models import Transaction
 
         income = (

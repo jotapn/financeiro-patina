@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load humanize %}
 {% block title %}Investimentos - Lista{% endblock %}
 {% block page_title %}Investimentos{% endblock %}
@@ -10,7 +10,9 @@
   <form method="get" class="flex gap-2">
     <select class="input-glass" name="type">
       <option value="">Todos os tipos</option>
-      {% for ac in asset_classes %}<option value="{{ ac.asset_type }}" {% if current_type == ac.asset_type %}selected{% endif %}>{{ ac.name }}</option>{% endfor %}
+      {% for ac in asset_classes %}
+      <option value="{{ ac.asset_type }}" {% if current_type == ac.asset_type %}selected{% endif %}>{{ ac.name }}</option>
+      {% endfor %}
     </select>
     <button class="btn-primary" type="submit">Filtrar</button>
   </form>
@@ -30,23 +32,169 @@
 </div>
 
 {% if show_modal %}
-<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
-  <div class="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
+<div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-5" style="background:rgba(0,0,0,0.74);backdrop-filter:blur(8px)">
+  <div
+    class="glass rounded-[2rem] p-6 md:p-7 w-full max-w-4xl modal-scroll"
+    x-data="{
+      assetType: '',
+      updateAssetType() {
+        const select = this.$refs.assetClassSelect;
+        if (!select || select.selectedIndex < 0) {
+          this.assetType = '';
+          return;
+        }
+        const option = select.options[select.selectedIndex];
+        this.assetType = option ? (option.dataset.assetType || '') : '';
+      },
+      get isFixedIncome() {
+        return ['fixed_prefixed', 'fixed_postfixed', 'treasury', 'savings', 'pension'].includes(this.assetType);
+      },
+      get isVariableIncome() {
+        return ['stocks', 'fii', 'etf', 'bdr', 'crypto', 'other'].includes(this.assetType);
+      }
+    }"
+    x-init="updateAssetType()"
+  >
     <div class="flex items-center justify-between mb-5">
-      <h2 class="text-lg font-bold text-white">Novo Ativo</h2>
+      <div>
+        <p class="text-[11px] uppercase tracking-[0.18em]" style="color:rgba(245,247,251,0.38)">Cadastro</p>
+        <h2 class="page-display text-3xl text-white">Novo investimento</h2>
+      </div>
       <a href="{% url 'investment_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
     </div>
-    <form method="post" action="{% url 'investment_create' %}" class="space-y-4">
+
+    <form method="post" action="{% url 'investment_create' %}" class="space-y-6">
       {% csrf_token %}
-      {% for field in form %}
-      <div>
-        <label class="block text-xs mb-1 text-slate-300">{{ field.label }}</label>
-        <div class="[&>input]:input-glass [&>select]:input-glass [&>textarea]:input-glass">{{ field }}</div>
+
+      {% if form.non_field_errors %}
+      <div class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        {{ form.non_field_errors }}
       </div>
-      {% endfor %}
-      <div class="flex gap-3">
+      {% endif %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ form.name.label }}</label>
+          <div class="mt-2">{{ form.name }}</div>
+          {% if form.name.errors %}<p class="text-xs text-red-300 mt-2">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.asset_class.label }}</label>
+          <div class="mt-2">{{ form.asset_class }}</div>
+          {% if form.asset_class.errors %}<p class="text-xs text-red-300 mt-2">{{ form.asset_class.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.ownership.label }}</label>
+          <div class="mt-2">{{ form.ownership }}</div>
+          {% if form.ownership.errors %}<p class="text-xs text-red-300 mt-2">{{ form.ownership.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.ticker.label }}</label>
+          <div class="mt-2">{{ form.ticker }}</div>
+          {% if form.ticker.errors %}<p class="text-xs text-red-300 mt-2">{{ form.ticker.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.institution.label }}</label>
+          <div class="mt-2">{{ form.institution }}</div>
+          {% if form.institution.errors %}<p class="text-xs text-red-300 mt-2">{{ form.institution.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Dados de mercado</p>
+        <div class="grid md:grid-cols-3 gap-4" x-show="isVariableIncome || !assetType" x-cloak>
+          <div>
+            <label>{{ form.quantity.label }}</label>
+            <div class="mt-2">{{ form.quantity }}</div>
+            {% if form.quantity.errors %}<p class="text-xs text-red-300 mt-2">{{ form.quantity.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label>{{ form.average_price.label }}</label>
+            <div class="mt-2 input-prefix-wrap">
+              <span class="input-prefix">
+                {% if request.user.profile.default_currency == 'USD' %}
+                  US$
+                {% elif request.user.profile.default_currency == 'EUR' %}
+                  &euro;
+                {% else %}
+                  R$
+                {% endif %}
+              </span>
+              {{ form.average_price }}
+            </div>
+            {% if form.average_price.errors %}<p class="text-xs text-red-300 mt-2">{{ form.average_price.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label>{{ form.current_price.label }}</label>
+            <div class="mt-2 input-prefix-wrap">
+              <span class="input-prefix">
+                {% if request.user.profile.default_currency == 'USD' %}
+                  US$
+                {% elif request.user.profile.default_currency == 'EUR' %}
+                  &euro;
+                {% else %}
+                  R$
+                {% endif %}
+              </span>
+              {{ form.current_price }}
+            </div>
+            {% if form.current_price.errors %}<p class="text-xs text-red-300 mt-2">{{ form.current_price.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4" x-show="isFixedIncome" x-cloak>
+          <div>
+            <label>{{ form.rate_type.label }}</label>
+            <div class="mt-2">{{ form.rate_type }}</div>
+            {% if form.rate_type.errors %}<p class="text-xs text-red-300 mt-2">{{ form.rate_type.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label>{{ form.rate_value.label }}</label>
+            <div class="mt-2">{{ form.rate_value }}</div>
+            {% if form.rate_value.errors %}<p class="text-xs text-red-300 mt-2">{{ form.rate_value.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label>{{ form.maturity_date.label }}</label>
+            <div class="mt-2">{{ form.maturity_date }}</div>
+            {% if form.maturity_date.errors %}<p class="text-xs text-red-300 mt-2">{{ form.maturity_date.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div>
+            <label>{{ form.invested_amount.label }}</label>
+            <div class="mt-2 input-prefix-wrap">
+              <span class="input-prefix">
+                {% if request.user.profile.default_currency == 'USD' %}
+                  US$
+                {% elif request.user.profile.default_currency == 'EUR' %}
+                  &euro;
+                {% else %}
+                  R$
+                {% endif %}
+              </span>
+              {{ form.invested_amount }}
+            </div>
+            {% if form.invested_amount.errors %}<p class="text-xs text-red-300 mt-2">{{ form.invested_amount.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label>{{ form.notes.label }}</label>
+        <div class="mt-2">{{ form.notes }}</div>
+        {% if form.notes.errors %}<p class="text-xs text-red-300 mt-2">{{ form.notes.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
         <a href="{% url 'investment_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
-        <button type="submit" class="btn-primary flex-1">Salvar</button>
+        <button type="submit" class="btn-primary flex-1">Salvar investimento</button>
       </div>
     </form>
   </div>

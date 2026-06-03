@@ -17,7 +17,16 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div>
     <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-      <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i> Orçamentos do mês
+      <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i>
+      <span>Orçamentos do mês</span>
+      <span class="info-tooltip">
+        <span class="info-tooltip__trigger">
+          <i data-lucide="info" class="w-3.5 h-3.5"></i>
+        </span>
+        <span class="info-tooltip__content">
+          Orçamentos definem o limite planejado de gastos por categoria para este período.
+        </span>
+      </span>
     </h3>
     <div class="space-y-3">
       {% for b in budgets %}
@@ -61,7 +70,16 @@
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-        <i data-lucide="target" class="w-4 h-4 text-blue-400"></i> Metas financeiras
+        <i data-lucide="target" class="w-4 h-4 text-blue-400"></i>
+        <span>Metas financeiras</span>
+        <span class="info-tooltip">
+          <span class="info-tooltip__trigger">
+            <i data-lucide="info" class="w-3.5 h-3.5"></i>
+          </span>
+          <span class="info-tooltip__content">
+            Metas ajudam a acompanhar objetivos de valor e prazo, como reserva, viagem ou compra planejada.
+          </span>
+        </span>
       </h3>
       <a href="{% url 'goal_create' %}" class="text-xs text-purple-400 hover:text-purple-300">+ Nova meta</a>
     </div>
@@ -114,23 +132,91 @@
 </div>
 
 {% if show_modal %}
-<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
-  <div class="glass rounded-2xl p-6 w-full max-w-md mx-4">
+<div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-5" style="background:rgba(0,0,0,0.74);backdrop-filter:blur(8px)">
+  <div class="glass rounded-[2rem] p-6 md:p-7 w-full max-w-3xl modal-scroll">
     <div class="flex items-center justify-between mb-5">
-      <h2 class="text-lg font-bold text-white">Novo Orçamento</h2>
+      <div>
+        <p class="text-[11px] uppercase tracking-[0.18em]" style="color:rgba(245,247,251,0.38)">Cadastro</p>
+        <h2 class="page-display text-3xl text-white">Novo orcamento</h2>
+      </div>
       <a href="{% url 'budget_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
     </div>
-    <form method="post" action="{% url 'budget_create' %}" class="space-y-4">
+
+    <form method="post" action="{% url 'budget_create' %}" class="space-y-6">
       {% csrf_token %}
-      {% for field in form %}
-      <div>
-        <label class="block text-xs mb-1" style="color:rgba(241,245,249,0.5)">{{ field.label }}</label>
-        <div class="[&>input]:input-glass [&>select]:input-glass">{{ field }}</div>
+
+      {% if form.non_field_errors %}
+      <div class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        {{ form.non_field_errors }}
       </div>
-      {% endfor %}
+      {% endif %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ form.category.label }}</label>
+          <div class="mt-2">{{ form.category }}</div>
+          {% if form.category.errors %}<p class="text-xs text-red-300 mt-2">{{ form.category.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.amount.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ form.amount }}
+          </div>
+          {% if form.amount.errors %}<p class="text-xs text-red-300 mt-2">{{ form.amount.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.reference_month.label }}</label>
+          <div class="mt-2">{{ form.reference_month }}</div>
+          {% if form.reference_month.errors %}<p class="text-xs text-red-300 mt-2">{{ form.reference_month.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.period.label }}</label>
+          <div class="mt-2">{{ form.period }}</div>
+          {% if form.period.errors %}<p class="text-xs text-red-300 mt-2">{{ form.period.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ form.scope.label }}</label>
+          <div class="mt-2">{{ form.scope }}</div>
+          {% if form.scope.errors %}<p class="text-xs text-red-300 mt-2">{{ form.scope.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ form.alert_threshold.label }}</label>
+          <div class="mt-2">{{ form.alert_threshold }}</div>
+          {% if form.alert_threshold.errors %}<p class="text-xs text-red-300 mt-2">{{ form.alert_threshold.errors.0 }}</p>{% endif %}
+          <p class="text-xs mt-2" style="color:rgba(245,247,251,0.42)">Defina em qual percentual de uso o sistema deve sinalizar que o teto esta perto.</p>
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Comportamento do orcamento</p>
+        <label class="toggle-row">
+          {{ form.rollover }}
+          <span class="toggle-control"></span>
+          <span>
+            <span class="block text-white text-sm font-semibold">{{ form.rollover.label }}</span>
+            <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Leva a sobra do periodo atual para o periodo seguinte.</span>
+          </span>
+        </label>
+        {% if form.rollover.errors %}<p class="text-xs text-red-300 mt-3">{{ form.rollover.errors.0 }}</p>{% endif %}
+      </div>
+
       <div class="flex gap-3 pt-2">
         <a href="{% url 'budget_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
-        <button type="submit" class="btn-primary flex-1">Salvar</button>
+        <button type="submit" class="btn-primary flex-1">Salvar orcamento</button>
       </div>
     </form>
   </div>
@@ -138,20 +224,149 @@
 {% endif %}
 
 {% if show_goal_modal %}
-<div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
-  <div class="glass rounded-2xl p-6 w-full max-w-md mx-4">
+<div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-5" style="background:rgba(0,0,0,0.74);backdrop-filter:blur(8px)">
+  <div
+    class="glass rounded-[2rem] p-6 md:p-7 w-full max-w-4xl modal-scroll"
+    x-data="{ selectedGoalIcon: '{{ goal_form.icon.value|default:'target' }}' }"
+  >
     <div class="flex items-center justify-between mb-5">
-      <h2 class="text-lg font-bold text-white">Nova Meta</h2>
+      <div>
+        <p class="text-[11px] uppercase tracking-[0.18em]" style="color:rgba(245,247,251,0.38)">Cadastro</p>
+        <h2 class="page-display text-3xl text-white">Nova meta</h2>
+      </div>
       <a href="{% url 'budget_list' %}" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></a>
     </div>
-    <form method="post" action="{% url 'goal_create' %}" class="space-y-4">
+
+    <form method="post" action="{% url 'goal_create' %}" class="space-y-6">
       {% csrf_token %}
-      {% for field in goal_form %}
-      <div>
-        <label class="block text-xs mb-1" style="color:rgba(241,245,249,0.5)">{{ field.label }}</label>
-        <div class="[&>input]:input-glass [&>select]:input-glass">{{ field }}</div>
+
+      {% if goal_form.non_field_errors %}
+      <div class="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        {{ goal_form.non_field_errors }}
       </div>
-      {% endfor %}
+      {% endif %}
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label>{{ goal_form.name.label }}</label>
+          <div class="mt-2">{{ goal_form.name }}</div>
+          {% if goal_form.name.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.goal_type.label }}</label>
+          <div class="mt-2">{{ goal_form.goal_type }}</div>
+          {% if goal_form.goal_type.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.goal_type.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.scope.label }}</label>
+          <div class="mt-2">{{ goal_form.scope }}</div>
+          {% if goal_form.scope.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.scope.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.target_amount.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ goal_form.target_amount }}
+          </div>
+          {% if goal_form.target_amount.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.target_amount.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.current_amount.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ goal_form.current_amount }}
+          </div>
+          {% if goal_form.current_amount.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.current_amount.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.target_date.label }}</label>
+          <div class="mt-2">{{ goal_form.target_date }}</div>
+          {% if goal_form.target_date.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.target_date.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label>{{ goal_form.linked_account.label }}</label>
+          <div class="mt-2">{{ goal_form.linked_account }}</div>
+          {% if goal_form.linked_account.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.linked_account.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label>{{ goal_form.monthly_contribution.label }}</label>
+          <div class="mt-2 input-prefix-wrap">
+            <span class="input-prefix">
+              {% if request.user.profile.default_currency == 'USD' %}
+                US$
+              {% elif request.user.profile.default_currency == 'EUR' %}
+                &euro;
+              {% else %}
+                R$
+              {% endif %}
+            </span>
+            {{ goal_form.monthly_contribution }}
+          </div>
+          {% if goal_form.monthly_contribution.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.monthly_contribution.errors.0 }}</p>{% endif %}
+          <p class="text-xs mt-2" style="color:rgba(245,247,251,0.42)">Use esse valor como referencia para acompanhar se a meta esta no ritmo certo.</p>
+        </div>
+      </div>
+
+      <div class="glass rounded-[1.5rem] p-4">
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Identidade visual da meta</p>
+        <div class="grid md:grid-cols-[220px_1fr] gap-4 items-center">
+          <div class="flex items-center gap-4">
+            <div class="color-swatch-shell">
+              {{ goal_form.color }}
+            </div>
+            <div>
+              <p class="text-sm text-white font-semibold">{{ goal_form.color.label }}</p>
+              <p class="text-xs mt-1" style="color:rgba(245,247,251,0.42)">Cor usada nos cards e no progresso.</p>
+            </div>
+          </div>
+
+          <div>
+            <label>{{ goal_form.icon.label }}</label>
+            <div class="hidden">
+              {{ goal_form.icon }}
+            </div>
+            <div class="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {% for value, label in goal_form.icon.field.widget.choices %}
+              <button
+                type="button"
+                class="glass rounded-[1rem] px-3 py-3 flex flex-col items-center justify-center gap-2 text-center border transition-all"
+                :class="selectedGoalIcon === '{{ value }}' ? 'border-sky-400 bg-sky-500/10 shadow-[0_0_0_1px_rgba(77,163,255,0.25)]' : 'border-white/10'"
+                @click="selectedGoalIcon = '{{ value }}'; document.getElementById('id_icon').value = '{{ value }}'"
+              >
+                <i data-lucide="{{ value }}" class="w-5 h-5 text-white"></i>
+                <span class="text-[11px] leading-tight" style="color:rgba(245,247,251,0.62)">{{ label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+            {% if goal_form.icon.errors %}<p class="text-xs text-red-300 mt-2">{{ goal_form.icon.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+        {% if goal_form.color.errors %}<p class="text-xs text-red-300 mt-3">{{ goal_form.color.errors.0 }}</p>{% endif %}
+      </div>
+
       <div class="flex gap-3 pt-2">
         <a href="{% url 'budget_list' %}" class="btn-ghost flex-1 text-center">Cancelar</a>
         <button type="submit" class="btn-primary flex-1">Salvar meta</button>

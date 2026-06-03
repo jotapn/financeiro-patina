@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Dashboard - FinanceFlow{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -159,9 +160,11 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{{ chart_data|json_script:"dashboard-chart-data" }}
+{{ category_data|json_script:"dashboard-category-data" }}
 <script>
-const chartData = {{ chart_data|safe }};
-const categoryData = {{ category_data|safe }};
+const chartData = JSON.parse(document.getElementById('dashboard-chart-data').textContent);
+const categoryData = JSON.parse(document.getElementById('dashboard-category-data').textContent);
 
 new Chart(document.getElementById('flowChart'), {
   type: 'bar',

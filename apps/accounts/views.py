@@ -11,7 +11,11 @@ from .models import FinancialAccount
 @login_required
 def account_list(request):
     group = request.user.profile.family_group
-    accounts = FinancialAccount.objects.filter(family_group=group, is_active=True).select_related('owner')
+    accounts = list(
+        FinancialAccount.objects.filter(family_group=group, is_active=True)
+        .select_related('owner')
+        .with_current_balance()
+    )
     total_balance = sum(a.current_balance for a in accounts if a.include_in_total)
     return render(
         request,
@@ -52,7 +56,7 @@ def account_create(request):
 @login_required
 def account_detail(request, pk):
     group = request.user.profile.family_group
-    account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
+    account = get_object_or_404(FinancialAccount.objects.with_current_balance(), pk=pk, family_group=group)
     transactions = account.transactions.select_related('category', 'user').order_by('-date')[:20]
     return render(request, 'accounts/detail.html', {'account': account, 'transactions': transactions})
 
