@@ -6,9 +6,12 @@ Sistema de controle financeiro familiar em Django.
 - Python 3.12+
 - Django 5.1
 - PostgreSQL
+- PgBouncer
 - Redis
+- RabbitMQ
 - Celery + Celery Beat
 - Channels + Daphne
+- Gunicorn + Nginx
 - TailwindCSS (CDN), HTMX, Alpine.js, Lucide, Chart.js
 
 ## Funcionalidades (ate Fase 2)
@@ -77,6 +80,31 @@ python manage.py seed_categories
 celery -A config worker -l info
 celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 ```
+
+## Docker Compose (producao inicial em VPS)
+O `docker-compose.yml` sobe Nginx, Gunicorn, PostgreSQL, PgBouncer, Redis, RabbitMQ,
+workers Celery por fila e Celery Beat.
+
+1. Criar `.env` a partir de `.env.example` e trocar senhas/host permitidos.
+
+2. Subir a stack:
+```powershell
+docker compose up --build
+```
+
+3. Rodar comandos operacionais no container web:
+```powershell
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py collectstatic --noinput
+```
+
+4. Acessar via Nginx:
+```powershell
+curl http://localhost/
+```
+
+O desenvolvimento local sem Docker Compose continua usando `DJANGO_SETTINGS_MODULE=config.settings.development`
+e `python manage.py runserver`.
 
 ## Rotas principais
 - App: `http://localhost:8000/`

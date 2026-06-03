@@ -19,7 +19,7 @@ def _get_bool_env(name: str, default: bool = False) -> bool:
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = _get_bool_env('DEBUG', default=False)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
+ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='localhost').split(',') if host.strip()]
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -126,8 +126,15 @@ CHANNEL_LAYERS = {
     }
 }
 
-CELERY_BROKER_URL = config('REDIS_URL', default='redis://redis:6379/0')
-CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://redis:6379/0')
+CELERY_BROKER_URL = config(
+    'CELERY_BROKER_URL',
+    default=config('REDIS_URL', default='redis://redis:6379/0'),
+)
+CELERY_RESULT_BACKEND = config(
+    'CELERY_RESULT_BACKEND',
+    default=config('REDIS_URL', default='redis://redis:6379/0'),
+)
+CELERY_TASK_DEFAULT_QUEUE = config('CELERY_TASK_DEFAULT_QUEUE', default='default')
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_TIMEZONE = 'America/Sao_Paulo'
 
