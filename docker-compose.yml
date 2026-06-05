@@ -24,6 +24,9 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
       DEBUG: "False"
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-False}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-False}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
       DATABASE_URL: ""
       DB_HOST: pgbouncer
       DB_PORT: "6432"
@@ -47,7 +50,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python -c \"import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8000/auth/login/', timeout=5); raise SystemExit(0 if r.status < 500 else 1)\"",
+          "python -c \"import http.client; c=http.client.HTTPConnection('127.0.0.1', 8000, timeout=5); c.request('GET', '/auth/login/'); r=c.getresponse(); raise SystemExit(0 if r.status < 500 else 1)\"",
         ]
       interval: 15s
       timeout: 5s

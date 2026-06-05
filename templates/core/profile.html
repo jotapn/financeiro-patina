@@ -124,6 +124,30 @@
         <button type="submit" class="btn-primary">Salvar perfil</button>
       </div>
     </form>
+
+    <div class="glass rounded-[1.5rem] p-4 mt-6">
+      <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Seguranca</p>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p class="text-white text-sm font-semibold">Autenticacao em duas etapas</p>
+          <p class="text-xs mt-1" style="color:rgba(245,247,251,0.42)">
+            {% if two_factor_enabled %}Ativa{% elif two_factor_required %}Obrigatoria para sua conta{% else %}Opcional{% endif %}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          {% if two_factor_enabled %}
+            {% if not two_factor_required %}
+              <form method="post" action="{% url 'two_factor_disable' %}">
+                {% csrf_token %}
+                <button type="submit" class="glass rounded-full px-4 py-2 text-sm font-semibold text-white">Desativar 2FA</button>
+              </form>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'two_factor_setup' %}" class="btn-primary">Ativar 2FA</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

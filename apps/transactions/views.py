@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.categories.models import Category
 from apps.core.decorators import family_edit_required
+from apps.core.security import rate_limit_post
 
 from .forms import TransactionForm
 from .models import Transaction
@@ -79,6 +80,7 @@ def transaction_list(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('transaction_create')
 def transaction_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -101,6 +103,7 @@ def transaction_create(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('transaction_edit')
 def transaction_edit(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)
@@ -118,6 +121,7 @@ def transaction_edit(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('transaction_delete')
 def transaction_delete(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)
@@ -131,6 +135,7 @@ def transaction_delete(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('transaction_toggle_status')
 def toggle_status(request, pk):
     group = request.user.profile.family_group
     tx = get_object_or_404(Transaction, pk=pk, family_group=group)

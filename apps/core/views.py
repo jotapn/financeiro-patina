@@ -1,25 +1,58 @@
 from datetime import date
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.views import (
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 
 from apps.accounts.models import FinancialAccount, PaymentMethod
 from apps.transactions.models import Transaction
 
 from .decorators import family_edit_required
 from .forms import InviteForm, LoginForm, ProfileForm, RegisterForm
-from .models import FamilyGroup, FamilyInvitation, UserProfile
+from .models import FamilyGroup, FamilyInvitation, SecurityEvent, UserProfile
+from .security import (
+    audit_security_event,
+    build_qr_code_data_url,
+    confirmed_totp_device,
+    get_setup_totp_device,
+    hash_identifier,
+    is_rate_limited,
+    rate_limit_post,
+    safe_next_url,
+    user_must_configure_2fa,
+    user_needs_2fa,
+    user_requires_2fa,
+    verify_and_login_otp,
+)
 
 
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
+            if is_rate_limited(
+                'register',
+                request,
+                limit=settings.RATE_LIMIT_REGISTER_LIMIT,
+                window=settings.RATE_LIMIT_REGISTER_WINDOW,
+                identifier=form.cleaned_data['email'],
+            ):
+                audit_security_event(request, SecurityEvent.RATE_LIMITED, metadata={'scope': 'register'})
+                messages.error(request, 'Muitas tentativas. Tente novamente em instantes.')
+                return render(request, 'registration/register.html', {'form': form}, status=429)
             user = form.save()
             group = FamilyGroup.objects.create(name=f'Fam\u00edlia de {user.first_name}')
             UserProfile.objects.create(user=user, family_group=group, role='admin')
@@ -45,18 +78,40 @@ def register(request):
 
 def login_view(request):
     if request.user.is_authenticated:
+        if user_must_configure_2fa(request.user):
+            return redirect('two_factor_setup')
+        if user_needs_2fa(request.user):
+            return redirect('two_factor_challenge')
         return redirect('dashboard')
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
+            email = form.cleaned_data['email']
+            if is_rate_limited(
+                'login',
+                request,
+                limit=settings.RATE_LIMIT_LOGIN_LIMIT,
+                window=settings.RATE_LIMIT_LOGIN_WINDOW,
+                identifier=email,
+            ):
+                audit_security_event(request, SecurityEvent.RATE_LIMITED, metadata={'scope': 'login', 'email': email})
+                messages.error(request, 'Muitas tentativas. Tente novamente em instantes.')
+                return render(request, 'registration/login.html', {'form': form}, status=429)
             user = authenticate(
                 request,
-                username=form.cleaned_data['email'],
+                username=email,
                 password=form.cleaned_data['password'],
             )
             if user:
                 login(request, user)
-                return redirect(request.GET.get('next', 'dashboard'))
+                audit_security_event(request, SecurityEvent.LOGIN_SUCCESS, user=user)
+                next_url = safe_next_url(request, request.GET.get('next'))
+                if user_must_configure_2fa(user):
+                    return redirect(f'{reverse("two_factor_setup")}?{urlencode({"next": next_url})}')
+                if user_needs_2fa(user):
+                    return redirect(f'{reverse("two_factor_challenge")}?{urlencode({"next": next_url})}')
+                return redirect(next_url)
+            audit_security_event(request, SecurityEvent.LOGIN_FAILURE, metadata={'email': email})
             messages.error(request, 'E-mail ou senha incorretos.')
     else:
         form = LoginForm()
@@ -64,6 +119,8 @@ def login_view(request):
 
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        audit_security_event(request, SecurityEvent.LOGOUT)
     logout(request)
     return redirect('login')
 
@@ -154,11 +211,20 @@ def profile(request):
         form = ProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
             form.save()
+            audit_security_event(request, SecurityEvent.PROFILE_CHANGED)
             messages.success(request, 'Perfil atualizado com sucesso!')
             return redirect('profile')
     else:
         form = ProfileForm(instance=user_profile)
-    return render(request, 'core/profile.html', {'form': form})
+    return render(
+        request,
+        'core/profile.html',
+        {
+            'form': form,
+            'two_factor_enabled': confirmed_totp_device(request.user) is not None,
+            'two_factor_required': request.user.is_staff or request.user.is_superuser,
+        },
+    )
 
 
 @login_required
@@ -175,6 +241,7 @@ def family_settings(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('family_invite')
 def invite_member(request):
     if request.method == 'POST':
         form = InviteForm(request.POST)
@@ -184,6 +251,11 @@ def invite_member(request):
                 family_group=group,
                 email=form.cleaned_data['email'],
                 invited_by=request.user,
+            )
+            audit_security_event(
+                request,
+                SecurityEvent.INVITE_CREATED,
+                metadata={'invitation_id': inv.pk, 'email': inv.email},
             )
             messages.success(request, f'Convite enviado para {inv.email}!')
     return redirect('family')
@@ -201,5 +273,149 @@ def accept_invite(request, token):
     user_profile.save()
     inv.accepted = True
     inv.save()
+    audit_security_event(
+        request,
+        SecurityEvent.INVITE_ACCEPTED,
+        metadata={'invitation_id': inv.pk, 'family_group_id': inv.family_group_id},
+    )
     messages.success(request, f'Voc\u00ea entrou no grupo {inv.family_group.name}!')
     return redirect('dashboard')
+
+
+@login_required
+def two_factor_setup(request):
+    next_url = safe_next_url(request, request.GET.get('next') or request.POST.get('next'))
+    if confirmed_totp_device(request.user) and not user_must_configure_2fa(request.user):
+        messages.info(request, '2FA ja esta ativo.')
+        return redirect('profile')
+
+    device = get_setup_totp_device(request.user)
+    if request.method == 'POST':
+        if is_rate_limited(
+            '2fa_setup',
+            request,
+            limit=settings.RATE_LIMIT_2FA_LIMIT,
+            window=settings.RATE_LIMIT_2FA_WINDOW,
+        ):
+            audit_security_event(request, SecurityEvent.RATE_LIMITED, metadata={'scope': '2fa_setup'})
+            messages.error(request, 'Muitas tentativas. Tente novamente em instantes.')
+            return render(
+                request,
+                'core/two_factor_setup.html',
+                {'qr_code_data_url': build_qr_code_data_url(device), 'next': next_url},
+                status=429,
+            )
+        token = request.POST.get('token', '')
+        if verify_and_login_otp(request, device, token):
+            device.confirmed = True
+            device.save(update_fields=['confirmed'])
+            audit_security_event(request, SecurityEvent.TWO_FACTOR_ENABLED)
+            messages.success(request, '2FA ativado com sucesso.')
+            return redirect(next_url)
+        audit_security_event(request, SecurityEvent.TWO_FACTOR_FAILURE)
+        messages.error(request, 'Codigo invalido.')
+
+    return render(
+        request,
+        'core/two_factor_setup.html',
+        {'qr_code_data_url': build_qr_code_data_url(device), 'next': next_url},
+    )
+
+
+@login_required
+def two_factor_challenge(request):
+    next_url = safe_next_url(request, request.GET.get('next') or request.POST.get('next'))
+    if user_must_configure_2fa(request.user):
+        return redirect(f'{reverse("two_factor_setup")}?{urlencode({"next": next_url})}')
+    if not user_requires_2fa(request.user) or not user_needs_2fa(request.user):
+        return redirect(next_url)
+
+    device = confirmed_totp_device(request.user)
+    if request.method == 'POST':
+        if is_rate_limited(
+            '2fa_challenge',
+            request,
+            limit=settings.RATE_LIMIT_2FA_LIMIT,
+            window=settings.RATE_LIMIT_2FA_WINDOW,
+        ):
+            audit_security_event(request, SecurityEvent.RATE_LIMITED, metadata={'scope': '2fa_challenge'})
+            messages.error(request, 'Muitas tentativas. Tente novamente em instantes.')
+            return render(request, 'registration/two_factor_challenge.html', {'next': next_url}, status=429)
+        token = request.POST.get('token', '')
+        if verify_and_login_otp(request, device, token):
+            audit_security_event(request, SecurityEvent.TWO_FACTOR_SUCCESS)
+            return redirect(next_url)
+        audit_security_event(request, SecurityEvent.TWO_FACTOR_FAILURE)
+        messages.error(request, 'Codigo invalido.')
+
+    return render(request, 'registration/two_factor_challenge.html', {'next': next_url})
+
+
+@login_required
+def two_factor_disable(request):
+    if request.method != 'POST':
+        return redirect('profile')
+    if request.user.is_staff or request.user.is_superuser:
+        messages.error(request, '2FA e obrigatorio para admins internos.')
+        return redirect('profile')
+    request.user.totpdevice_set.filter(confirmed=True).delete()
+    audit_security_event(request, SecurityEvent.TWO_FACTOR_DISABLED)
+    messages.success(request, '2FA desativado.')
+    return redirect('profile')
+
+
+class FinancePasswordResetView(PasswordResetView):
+    template_name = 'registration/password_reset_form.html'
+    email_template_name = 'registration/password_reset_email.txt'
+    subject_template_name = 'registration/password_reset_subject.txt'
+    success_url = reverse_lazy('core_password_reset_done')
+    extra_email_context = {'reset_confirm_url_name': 'core_password_reset_confirm'}
+
+    def post(self, request, *args, **kwargs):
+        email = request.POST.get('email', '').strip().lower()
+        if is_rate_limited(
+            'password_reset',
+            request,
+            limit=settings.RATE_LIMIT_PASSWORD_RESET_LIMIT,
+            window=settings.RATE_LIMIT_PASSWORD_RESET_WINDOW,
+            identifier=email or None,
+        ):
+            audit_security_event(
+                request,
+                SecurityEvent.RATE_LIMITED,
+                metadata={'scope': 'password_reset', 'email_hash': hash_identifier(email)},
+            )
+            messages.error(request, 'Muitas tentativas. Tente novamente em instantes.')
+            return render(request, self.template_name, {'form': self.get_form()}, status=429)
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        email = form.cleaned_data.get('email', '')
+        audit_security_event(
+            self.request,
+            SecurityEvent.PASSWORD_RESET_REQUESTED,
+            metadata={'email_hash': hash_identifier(email)},
+        )
+        return super().form_valid(form)
+
+
+class FinancePasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'registration/password_reset_done.html'
+
+
+class FinancePasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'registration/password_reset_confirm.html'
+    success_url = reverse_lazy('core_password_reset_complete')
+
+    def form_valid(self, form):
+        audit_security_event(
+            self.request,
+            SecurityEvent.PASSWORD_RESET_SUCCESS,
+            user=self.user,
+            metadata={'user_id': self.user.pk},
+        )
+        return super().form_valid(form)
+
+
+class FinancePasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'registration/password_reset_complete.html'

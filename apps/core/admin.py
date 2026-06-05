@@ -1,7 +1,7 @@
 ﻿from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import FamilyGroup, FamilyInvitation, User, UserProfile
+from .models import FamilyGroup, FamilyInvitation, SecurityEvent, User, UserProfile
 
 
 @admin.register(User)
@@ -49,4 +49,12 @@ class UserProfileAdmin(admin.ModelAdmin):
 @admin.register(FamilyInvitation)
 class FamilyInvitationAdmin(admin.ModelAdmin):
     list_display = ('email', 'family_group', 'accepted', 'expires_at')
+
+
+@admin.register(SecurityEvent)
+class SecurityEventAdmin(admin.ModelAdmin):
+    list_display = ('event_type', 'user', 'ip_address', 'created_at')
+    list_filter = ('event_type', 'created_at')
+    search_fields = ('user__email', 'ip_address')
+    readonly_fields = ('event_type', 'user', 'ip_address', 'user_agent', 'metadata', 'created_at')
 

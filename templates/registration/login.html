@@ -21,6 +21,9 @@
     <div>
       <label>Senha</label>
       <input type="password" name="password" class="input-glass mt-2" placeholder="********" autocomplete="current-password" required>
+      <div class="mt-2 text-right">
+        <a href="{% url 'core_password_reset' %}" class="text-xs font-semibold hover:opacity-80" style="color:#8ec7ff">Esqueci minha senha</a>
+      </div>
     </div>
     <button type="submit" class="btn-primary mt-2 w-full">Entrar</button>
   </form>

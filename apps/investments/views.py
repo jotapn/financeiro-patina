@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.decorators import family_edit_required
+from apps.core.security import rate_limit_post
 
 from .forms import InvestmentForm, InvestmentGoalForm, InvestmentTransactionForm
 from .models import AssetClass, Investment, InvestmentGoal
@@ -135,6 +136,7 @@ def _investment_list_context(request, *, form=None, show_modal=False):
 
 @login_required
 @family_edit_required
+@rate_limit_post('investment_create')
 def investment_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -175,6 +177,7 @@ def investment_detail(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('investment_add_transaction')
 def investment_add_transaction(request, pk):
     group = request.user.profile.family_group
     inv = get_object_or_404(Investment, pk=pk, family_group=group)
@@ -191,6 +194,7 @@ def investment_add_transaction(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('investment_goal_create')
 def investment_goal_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -206,6 +210,7 @@ def investment_goal_create(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('investment_refresh_prices')
 def refresh_prices(request):
     from .tasks import update_crypto_prices, update_stock_prices
 
