@@ -6,16 +6,17 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     PasswordResetCompleteView,
     PasswordResetConfirmView,
     PasswordResetDoneView,
     PasswordResetView,
 )
-from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.views.decorators.http import require_http_methods
 
 from apps.accounts.models import FinancialAccount, PaymentMethod
 from apps.transactions.models import Transaction
@@ -118,7 +119,10 @@ def login_view(request):
     return render(request, 'registration/login.html', {'form': form})
 
 
+@require_http_methods(['GET', 'POST'])
 def logout_view(request):
+    if request.method == 'GET':
+        messages.info(request, 'Use o botão de sair para encerrar a sessão com segurança.')
     if request.user.is_authenticated:
         audit_security_event(request, SecurityEvent.LOGOUT)
     logout(request)
@@ -286,7 +290,7 @@ def accept_invite(request, token):
 def two_factor_setup(request):
     next_url = safe_next_url(request, request.GET.get('next') or request.POST.get('next'))
     if confirmed_totp_device(request.user) and not user_must_configure_2fa(request.user):
-        messages.info(request, '2FA ja esta ativo.')
+        messages.info(request, '2FA já está ativo.')
         return redirect('profile')
 
     device = get_setup_totp_device(request.user)
@@ -313,7 +317,7 @@ def two_factor_setup(request):
             messages.success(request, '2FA ativado com sucesso.')
             return redirect(next_url)
         audit_security_event(request, SecurityEvent.TWO_FACTOR_FAILURE)
-        messages.error(request, 'Codigo invalido.')
+        messages.error(request, 'Código inválido ou expirado. Confira o app autenticador e tente novamente.')
 
     return render(
         request,
@@ -346,7 +350,7 @@ def two_factor_challenge(request):
             audit_security_event(request, SecurityEvent.TWO_FACTOR_SUCCESS)
             return redirect(next_url)
         audit_security_event(request, SecurityEvent.TWO_FACTOR_FAILURE)
-        messages.error(request, 'Codigo invalido.')
+        messages.error(request, 'Código inválido ou expirado. Confira o app autenticador e tente novamente.')
 
     return render(request, 'registration/two_factor_challenge.html', {'next': next_url})
 
@@ -356,7 +360,7 @@ def two_factor_disable(request):
     if request.method != 'POST':
         return redirect('profile')
     if request.user.is_staff or request.user.is_superuser:
-        messages.error(request, '2FA e obrigatorio para admins internos.')
+        messages.error(request, '2FA é obrigatório para admins internos.')
         return redirect('profile')
     request.user.totpdevice_set.filter(confirmed=True).delete()
     audit_security_event(request, SecurityEvent.TWO_FACTOR_DISABLED)

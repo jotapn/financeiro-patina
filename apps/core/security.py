@@ -18,7 +18,18 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from .models import SecurityEvent
 
-SENSITIVE_METADATA_KEYS = {'password', 'password1', 'password2', 'token', 'secret', 'key'}
+SENSITIVE_METADATA_KEYS = {
+    'password',
+    'password1',
+    'password2',
+    'token',
+    'secret',
+    'key',
+    'code',
+    'otp',
+    'totp',
+    'totp_token',
+}
 SUSPICIOUS_FILENAME_PARTS = ('..', '/', '\\', '\x00', ':')
 
 

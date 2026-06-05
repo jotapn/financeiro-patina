@@ -8,11 +8,12 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
+from django_otp.oath import totp
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.core.models import FamilyGroup, SecurityEvent, UserProfile
-from apps.core.security import validate_upload_file
+from apps.core.security import audit_security_event, validate_upload_file
 
 
 User = get_user_model()
@@ -31,6 +32,7 @@ class SecurityHardeningTests(TestCase):
     def setUp(self):
         self._template_store_patch = mock.patch('django.test.client.store_rendered_templates', lambda *args, **kwargs: None)
         self._template_store_patch.start()
+        self.factory = RequestFactory()
         cache.clear()
         mail.outbox = []
 
@@ -108,12 +110,46 @@ class SecurityHardeningTests(TestCase):
         user = self.create_user()
         self.client.login(email='user@example.com', password='StrongPass123')
 
-        self.client.get('/auth/logout/')
+        self.client.post('/auth/logout/')
         self.assertTrue(SecurityEvent.objects.filter(event_type=SecurityEvent.LOGOUT, user=user).exists())
 
         self.client.login(email='user@example.com', password='StrongPass123')
         self.client.post('/family/invite/', {'email': 'guest@example.com'})
         self.assertTrue(SecurityEvent.objects.filter(event_type=SecurityEvent.INVITE_CREATED, user=user).exists())
+
+    def test_logout_get_keeps_compatibility(self):
+        user = self.create_user()
+        self.client.login(email='user@example.com', password='StrongPass123')
+
+        response = self.client.get('/auth/logout/')
+
+        self.assertRedirects(response, '/auth/login/')
+        self.assertTrue(SecurityEvent.objects.filter(event_type=SecurityEvent.LOGOUT, user=user).exists())
+
+    def test_authenticated_user_on_login_page_goes_to_dashboard(self):
+        self.create_user()
+        self.client.login(email='user@example.com', password='StrongPass123')
+
+        response = self.client.get('/auth/login/')
+
+        self.assertRedirects(response, '/')
+
+    def test_authenticated_staff_without_2fa_on_login_page_goes_to_setup(self):
+        self.create_user(email='staff@example.com', username='staff@example.com', is_staff=True)
+        self.client.login(email='staff@example.com', password='StrongPass123')
+
+        response = self.client.get('/auth/login/')
+
+        self.assertRedirects(response, '/profile/2fa/setup/', fetch_redirect_response=False)
+
+    def test_authenticated_user_with_2fa_on_login_page_goes_to_challenge(self):
+        user = self.create_user(email='totp@example.com', username='totp@example.com')
+        TOTPDevice.objects.create(user=user, name='default', confirmed=True)
+        self.client.login(email='totp@example.com', password='StrongPass123')
+
+        response = self.client.get('/auth/login/')
+
+        self.assertRedirects(response, '/profile/2fa/verify/', fetch_redirect_response=False)
 
     def test_staff_without_2fa_is_sent_to_setup_after_login(self):
         self.create_user(email='staff@example.com', username='staff@example.com', is_staff=True)
@@ -132,11 +168,38 @@ class SecurityHardeningTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response['Location'].startswith('/profile/2fa/verify/'))
 
+    def test_two_factor_setup_accepts_valid_code(self):
+        user = self.create_user(email='staff@example.com', username='staff@example.com', is_staff=True)
+        self.client.login(email='staff@example.com', password='StrongPass123')
+        self.client.get('/profile/2fa/setup/')
+        device = TOTPDevice.objects.get(user=user, confirmed=False)
+        token = str(totp(device.bin_key, device.step, device.t0, device.digits)).zfill(device.digits)
+
+        response = self.client.post('/profile/2fa/setup/', {'token': token})
+
+        self.assertRedirects(response, '/')
+        device.refresh_from_db()
+        self.assertTrue(device.confirmed)
+        self.assertTrue(SecurityEvent.objects.filter(event_type=SecurityEvent.TWO_FACTOR_ENABLED, user=user).exists())
+
+    def test_two_factor_challenge_rejects_invalid_code(self):
+        user = self.create_user(email='totp2@example.com', username='totp2@example.com')
+        TOTPDevice.objects.create(user=user, name='default', confirmed=True)
+        self.client.login(email='totp2@example.com', password='StrongPass123')
+
+        response = self.client.post('/profile/2fa/verify/', {'token': '000000'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(SecurityEvent.objects.filter(event_type=SecurityEvent.TWO_FACTOR_FAILURE, user=user).exists())
+
     def test_production_security_settings_are_enabled(self):
         env = {
             'SECRET_KEY': 'test-secret-key',
             'ALLOWED_HOSTS': 'app.example.com',
             'DATABASE_URL': 'postgresql://user:pass@localhost:5432/db?sslmode=require',
+            'SECURE_SSL_REDIRECT': 'True',
+            'SESSION_COOKIE_SECURE': 'True',
+            'CSRF_COOKIE_SECURE': 'True',
         }
         with mock.patch.dict(os.environ, env, clear=False):
             sys.modules.pop('config.settings.production', None)
@@ -244,6 +307,27 @@ class SecurityHardeningTests(TestCase):
         self.assertNotIn('email', metadata)
         self.assertNotIn('token', metadata)
         self.assertNotIn('password', metadata)
+
+    def test_security_audit_filters_sensitive_2fa_metadata(self):
+        self.create_user()
+        self.client.login(email='user@example.com', password='StrongPass123')
+        request = self.factory.post('/profile/2fa/verify/')
+        request.user = User.objects.get(email='user@example.com')
+
+        audit_security_event(
+            request,
+            SecurityEvent.TWO_FACTOR_FAILURE,
+            metadata={
+                'token': '123456',
+                'code': '123456',
+                'otp': '123456',
+                'totp': '123456',
+                'scope': '2fa_challenge',
+            },
+        )
+        event = SecurityEvent.objects.filter(event_type=SecurityEvent.TWO_FACTOR_FAILURE).first()
+
+        self.assertEqual(event.metadata, {'scope': '2fa_challenge'})
 
     def _reset_path_from_email(self):
         match = re.search(r'http://testserver(?P<path>/auth/reset/\S+)', mail.outbox[0].body)

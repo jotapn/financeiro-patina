@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Perfil - FinanceFlow{% endblock %}
 {% block page_title %}Meu perfil{% endblock %}
-{% block page_subtitle %}Preferencias pessoais, moeda padrao e regras de notificacao{% endblock %}
+{% block page_subtitle %}Preferências pessoais, moeda padrão e regras de notificação{% endblock %}
 {% block content %}
 <div class="max-w-4xl">
   <div class="glass rounded-[1.75rem] p-6 md:p-7">
@@ -58,14 +58,14 @@
       </div>
 
       <div class="glass rounded-[1.5rem] p-4">
-        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Notificacoes</p>
+        <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Notificações</p>
         <div class="space-y-4">
           <label class="toggle-row">
             {{ form.notify_budget_alert }}
             <span class="toggle-control"></span>
             <span>
               <span class="block text-white text-sm font-semibold">{{ form.notify_budget_alert.label }}</span>
-              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Avisa quando um orcamento estiver chegando no limite.</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Avisa quando um orçamento estiver chegando no limite.</span>
             </span>
           </label>
 
@@ -74,7 +74,7 @@
             <span class="toggle-control"></span>
             <span>
               <span class="block text-white text-sm font-semibold">{{ form.notify_bill_due.label }}</span>
-              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Lembra com antecedencia sobre vencimentos de fatura.</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Lembra com antecedência sobre vencimentos de fatura.</span>
             </span>
           </label>
 
@@ -83,7 +83,7 @@
             <span class="toggle-control"></span>
             <span>
               <span class="block text-white text-sm font-semibold">{{ form.notify_low_balance.label }}</span>
-              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Dispara um alerta quando a conta chegar perto do minimo definido.</span>
+              <span class="block text-xs mt-1" style="color:rgba(245,247,251,0.42)">Dispara um alerta quando a conta chegar perto do mínimo definido.</span>
             </span>
           </label>
         </div>
@@ -126,12 +126,12 @@
     </form>
 
     <div class="glass rounded-[1.5rem] p-4 mt-6">
-      <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Seguranca</p>
+      <p class="text-[11px] uppercase tracking-[0.18em] mb-4" style="color:rgba(245,247,251,0.38)">Segurança</p>
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-white text-sm font-semibold">Autenticacao em duas etapas</p>
+          <p class="text-white text-sm font-semibold">Autenticação em duas etapas</p>
           <p class="text-xs mt-1" style="color:rgba(245,247,251,0.42)">
-            {% if two_factor_enabled %}Ativa{% elif two_factor_required %}Obrigatoria para sua conta{% else %}Opcional{% endif %}
+            {% if two_factor_enabled %}Ativa{% elif two_factor_required %}Obrigatória para sua conta{% else %}Opcional{% endif %}
           </p>
         </div>
         <div class="flex flex-wrap gap-3">
