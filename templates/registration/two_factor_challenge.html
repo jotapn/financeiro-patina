@@ -1,0 +1,25 @@
+{% extends 'base_auth.html' %}
+{% block title %}2FA - FinanceFlow{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto w-full">
+  <p class="text-[11px] uppercase tracking-[0.28em] mb-3" style="color:rgba(245,247,251,0.38)">Segurança</p>
+  <h2 class="page-display text-4xl text-white leading-none mb-3">Confirme o acesso.</h2>
+  <p class="text-sm mb-8" style="color:rgba(245,247,251,0.58)">Digite o código de 6 dígitos gerado no seu app autenticador.</p>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded-2xl text-sm border border-red-400/25 text-red-300 bg-red-500/5">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div>
+      <label>Código do app autenticador</label>
+      <input type="text" name="token" class="input-glass mt-2" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]*" required autofocus>
+    </div>
+    <button type="submit" class="btn-primary mt-2 w-full">Verificar código</button>
+  </form>
+</div>
+{% endblock %}

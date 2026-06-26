@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.categories.models import Category
 from apps.core.decorators import family_edit_required
+from apps.core.security import rate_limit_post
 from apps.transactions.forms import TransactionForm
 from apps.transactions.models import Transaction
 
@@ -135,6 +136,7 @@ def card_list(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('card_create')
 def card_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -189,6 +191,7 @@ def card_detail(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('card_pay_invoice')
 def pay_invoice(request, pk):
     group = request.user.profile.family_group
     invoice = get_object_or_404(CardInvoice, pk=pk, card__family_group=group)
@@ -226,6 +229,7 @@ def pay_invoice(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('card_add_transaction')
 def add_card_transaction(request, card_pk):
     group = request.user.profile.family_group
     card = get_object_or_404(CreditCard, pk=card_pk, family_group=group)

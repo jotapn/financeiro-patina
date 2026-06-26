@@ -70,9 +70,12 @@
             <p class="text-sm font-semibold text-white truncate">{{ request.user.get_full_name }}</p>
             <p class="text-[11px] uppercase tracking-[0.18em] truncate" style="color:rgba(245,247,251,0.38)">{{ family_group.name|default:"Sem grupo" }}</p>
           </div>
-          <a href="{% url 'logout' %}" class="text-slate-400 hover:text-white transition-colors">
-            <i data-lucide="log-out" class="w-4 h-4"></i>
-          </a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="text-slate-400 hover:text-white transition-colors" aria-label="Sair">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </form>
         </div>
       </div>
     </aside>

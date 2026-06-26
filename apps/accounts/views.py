@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.decorators import family_edit_required
+from apps.core.security import rate_limit_post
 
 from .forms import FinancialAccountForm, TransferForm
 from .models import FinancialAccount
@@ -29,6 +30,7 @@ def account_list(request):
 
 @login_required
 @family_edit_required
+@rate_limit_post('account_create')
 def account_create(request):
     group = request.user.profile.family_group
     if request.method == 'POST':
@@ -63,6 +65,7 @@ def account_detail(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('account_edit')
 def account_edit(request, pk):
     group = request.user.profile.family_group
     account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
@@ -87,6 +90,7 @@ def account_edit(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('account_delete')
 def account_delete(request, pk):
     group = request.user.profile.family_group
     account = get_object_or_404(FinancialAccount, pk=pk, family_group=group)
@@ -99,6 +103,7 @@ def account_delete(request, pk):
 
 @login_required
 @family_edit_required
+@rate_limit_post('account_transfer')
 def transfer(request):
     group = request.user.profile.family_group
     if request.method == 'POST':

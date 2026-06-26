@@ -6,6 +6,7 @@ from django.db.models import Q
 from apps.accounts.models import FinancialAccount, PaymentMethod
 from apps.cards.models import CreditCard
 from apps.categories.models import Category, Subcategory
+from apps.core.security import validate_upload_file
 
 from .models import Tag, Transaction
 
@@ -196,3 +197,8 @@ class TransactionForm(forms.ModelForm):
             self.add_error('category', 'Selecione a categoria antes da subcategoria.')
 
         return cleaned_data
+
+    def clean_receipt_image(self):
+        receipt_image = self.cleaned_data.get('receipt_image')
+        validate_upload_file(receipt_image)
+        return receipt_image

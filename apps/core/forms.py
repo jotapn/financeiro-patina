@@ -2,6 +2,7 @@
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import User, UserProfile
+from .security import validate_upload_file
 
 
 class RegisterForm(UserCreationForm):
@@ -78,6 +79,12 @@ class ProfileForm(forms.ModelForm):
                 attrs={'class': 'input-glass', 'min': '0', 'max': '30', 'placeholder': '3'}
             ),
         }
+
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        validate_upload_file(avatar)
+        return avatar
 
 
 class InviteForm(forms.Form):

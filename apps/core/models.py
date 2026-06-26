@@ -104,3 +104,62 @@ class FamilyInvitation(models.Model):
     def __str__(self):
         return f'Convite para {self.email}'
 
+
+class SecurityEvent(models.Model):
+    LOGIN_SUCCESS = 'login_success'
+    LOGIN_FAILURE = 'login_failure'
+    LOGOUT = 'logout'
+    INVITE_CREATED = 'invite_created'
+    INVITE_ACCEPTED = 'invite_accepted'
+    PROFILE_CHANGED = 'profile_changed'
+    PERMISSION_CHANGED = 'permission_changed'
+    RATE_LIMITED = 'rate_limited'
+    TWO_FACTOR_ENABLED = 'two_factor_enabled'
+    TWO_FACTOR_DISABLED = 'two_factor_disabled'
+    TWO_FACTOR_SUCCESS = 'two_factor_success'
+    TWO_FACTOR_FAILURE = 'two_factor_failure'
+    PASSWORD_RESET_REQUESTED = 'password_reset_requested'
+    PASSWORD_RESET_SUCCESS = 'password_reset_success'
+
+    EVENT_CHOICES = [
+        (LOGIN_SUCCESS, 'Login bem-sucedido'),
+        (LOGIN_FAILURE, 'Falha de login'),
+        (LOGOUT, 'Logout'),
+        (INVITE_CREATED, 'Convite criado'),
+        (INVITE_ACCEPTED, 'Convite aceito'),
+        (PROFILE_CHANGED, 'Perfil alterado'),
+        (PERMISSION_CHANGED, 'Permissao alterada'),
+        (RATE_LIMITED, 'Rate limit aplicado'),
+        (TWO_FACTOR_ENABLED, '2FA ativado'),
+        (TWO_FACTOR_DISABLED, '2FA desativado'),
+        (TWO_FACTOR_SUCCESS, '2FA verificado'),
+        (TWO_FACTOR_FAILURE, 'Falha de 2FA'),
+        (PASSWORD_RESET_REQUESTED, 'Recuperacao de senha solicitada'),
+        (PASSWORD_RESET_SUCCESS, 'Senha redefinida'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='security_events',
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event_type', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+        ]
+        verbose_name = 'Evento de seguranca'
+        verbose_name_plural = 'Eventos de seguranca'
+
+    def __str__(self):
+        return f'{self.event_type} em {self.created_at:%Y-%m-%d %H:%M:%S}'
+
