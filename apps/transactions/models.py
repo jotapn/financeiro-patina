@@ -1,4 +1,5 @@
 ﻿from django.db import models
+from django.db.models import Q
 
 
 class Tag(models.Model):
@@ -91,6 +92,15 @@ class Transaction(models.Model):
     receipt_image = models.ImageField(upload_to='receipts/%Y/%m/', null=True, blank=True)
     location = models.CharField(max_length=200, blank=True, verbose_name='Estabelecimento')
     is_ignored = models.BooleanField(default=False)
+
+    # Origem dos dados (importação automática via Open Finance / Pluggy).
+    SOURCE_MANUAL = 'manual'
+    SOURCE_PLUGGY = 'pluggy'
+    SOURCE_CHOICES = [(SOURCE_MANUAL, 'Manual'), (SOURCE_PLUGGY, 'Open Finance (Pluggy)')]
+    external_source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default=SOURCE_MANUAL)
+    external_id = models.CharField(max_length=64, blank=True, default='', db_index=True)
+    is_auto_imported = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -101,6 +111,13 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=['family_group', 'date']),
             models.Index(fields=['user', 'transaction_type']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['family_group', 'external_source', 'external_id'],
+                condition=~Q(external_id=''),
+                name='uniq_external_txn',
+            ),
         ]
 
     def __str__(self):

@@ -107,6 +107,7 @@ LOCAL_APPS = [
     'apps.reports',
     'apps.ai_assistant',
     'apps.notifications',
+    'apps.integrations',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -265,6 +266,20 @@ CACHES = {
         'LOCATION': config('REDIS_URL', default='redis://redis:6379/0'),
     }
 }
+
+# Open Finance / Pluggy
+PLUGGY_CLIENT_ID = config('PLUGGY_CLIENT_ID', default='')
+PLUGGY_CLIENT_SECRET = config('PLUGGY_CLIENT_SECRET', default='')
+PLUGGY_API_URL = config('PLUGGY_API_URL', default='https://api.pluggy.ai')
+PLUGGY_USE_SANDBOX = _get_bool_env('PLUGGY_USE_SANDBOX', default=True)
+PLUGGY_WEBHOOK_URL = config('PLUGGY_WEBHOOK_URL', default='')
+# Segredo compartilhado: o webhook só é aceito com ?token=<este valor>.
+PLUGGY_WEBHOOK_SECRET = config('PLUGGY_WEBHOOK_SECRET', default='')
+# Janela (em dias) para a primeira importação de transações de uma conta.
+PLUGGY_INITIAL_SYNC_DAYS = config('PLUGGY_INITIAL_SYNC_DAYS', default=90, cast=int)
+# Chave Fernet (base64, 32 bytes) usada para criptografar dados sensíveis de integração.
+# Gere com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default='')
 
 if 'test' in sys.argv:
     DATABASES['default'] = {

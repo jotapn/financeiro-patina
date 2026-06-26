@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Conectar conta - FinanceFlow{% endblock %}
+{% block page_title %}Open Finance{% endblock %}
+{% block page_subtitle %}Conecte sua conta bancária via Pluggy e importe saldo e transações automaticamente{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'pluggy_list' %}" class="btn-ghost">Voltar</a>
+{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="glass rounded-[1.75rem] p-6 md:p-7">
+    <p class="text-[11px] uppercase tracking-[0.2em]" style="color:rgba(245,247,251,0.38)">Integração</p>
+    <h3 class="page-display text-2xl text-white mb-4">Conectar instituição</h3>
+
+    {% if error %}
+      <div class="glass rounded-[1.25rem] p-4 mb-4" style="border-color:rgba(248,113,113,0.4)">
+        <p class="text-sm text-red-300">Não foi possível iniciar a conexão.</p>
+        <p class="text-xs mt-1" style="color:rgba(245,247,251,0.5)">{{ error }}</p>
+        <p class="text-xs mt-2" style="color:rgba(245,247,251,0.5)">Verifique as credenciais <code>PLUGGY_CLIENT_ID</code> / <code>PLUGGY_CLIENT_SECRET</code> no <code>.env</code>.</p>
+      </div>
+    {% else %}
+      <p class="text-sm mb-5" style="color:rgba(245,247,251,0.6)">
+        Você será direcionado ao ambiente seguro do Pluggy para autenticar no seu banco.
+        Nenhuma senha bancária é armazenada pelo FinanceFlow.
+      </p>
+      <button id="pluggy-open" class="btn-primary">Abrir conexão segura</button>
+    {% endif %}
+
+    <form id="pluggy-result-form" method="post" action="{% url 'pluggy_callback' %}" class="hidden">
+      {% csrf_token %}
+      <input type="hidden" name="item_id" id="pluggy-item-id">
+    </form>
+  </div>
+</div>
+
+{% if connect_token %}
+<script src="https://cdn.pluggy.ai/pluggy-connect/v1.3.1/pluggy-connect.js"></script>
+<script>
+  (function () {
+    const btn = document.getElementById('pluggy-open');
+    if (!btn) return;
+
+    function openWidget() {
+      if (typeof PluggyConnect === 'undefined') {
+        console.error('PluggyConnect SDK não carregou. Verifique a URL do script.');
+        alert('Widget do Pluggy não carregou. Verifique o console (F12).');
+        return;
+      }
+      const connect = new PluggyConnect({
+        connectToken: '{{ connect_token }}',
+        includeSandbox: {{ use_sandbox|yesno:"true,false" }},
+        onSuccess: function (itemData) {
+          const itemId = (itemData && itemData.item && itemData.item.id) || itemData.itemId;
+          document.getElementById('pluggy-item-id').value = itemId;
+          document.getElementById('pluggy-result-form').submit();
+        },
+        onError: function (error) {
+          console.error('Pluggy error:', error);
+          alert('Não foi possível concluir a conexão. Tente novamente.');
+        },
+      });
+      connect.init();
+    }
+
+    btn.addEventListener('click', openWidget);
+  })();
+</script>
+{% endif %}
+{% endblock %}

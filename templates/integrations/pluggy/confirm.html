@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Vincular contas - FinanceFlow{% endblock %}
+{% block page_title %}Vincular contas detectadas{% endblock %}
+{% block page_subtitle %}{{ item.connector_name }} · escolha criar uma conta nova ou vincular a uma existente{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'pluggy_list' %}" class="btn-ghost">Cancelar</a>
+{% endblock %}
+{% block content %}
+<form method="post" action="{% url 'pluggy_confirm' item.pk %}" class="max-w-3xl space-y-4">
+  {% csrf_token %}
+
+  {% for link in links %}
+    <div class="glass rounded-[1.5rem] p-5" x-data="{ action: '{% if link.link_mode == 'mapped' %}map{% elif link.link_mode == 'ignored' %}ignore{% else %}create{% endif %}' }">
+      <div class="flex items-center justify-between gap-4 mb-3">
+        <div>
+          <p class="text-lg font-semibold text-white">{{ link.name }}</p>
+          <p class="text-xs" style="color:rgba(245,247,251,0.45)">
+            {{ link.pluggy_subtype|default:"Conta bancária" }}
+            {% if link.pluggy_balance is not None %}· Saldo Pluggy: R$ {{ link.pluggy_balance|floatformat:2|intcomma }}{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-3">
+        <label class="cursor-pointer">
+          <input type="radio" name="action_{{ link.pk }}" value="create" x-model="action" class="sr-only">
+          <span class="px-3 py-1.5 rounded-xl text-sm inline-block" :class="action === 'create' ? 'bg-blue-500/30 text-white' : 'bg-white/5'">Criar nova conta</span>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="action_{{ link.pk }}" value="map" x-model="action" class="sr-only">
+          <span class="px-3 py-1.5 rounded-xl text-sm inline-block" :class="action === 'map' ? 'bg-blue-500/30 text-white' : 'bg-white/5'">Vincular a existente</span>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="action_{{ link.pk }}" value="ignore" x-model="action" class="sr-only">
+          <span class="px-3 py-1.5 rounded-xl text-sm inline-block" :class="action === 'ignore' ? 'bg-white/15 text-white' : 'bg-white/5'">Ignorar</span>
+        </label>
+      </div>
+
+      <div x-show="action === 'create'" x-cloak>
+        <label class="text-xs" style="color:rgba(245,247,251,0.5)">Nome da conta</label>
+        <input type="text" name="name_{{ link.pk }}" value="{{ link.name }}" class="input-glass mt-1 w-full">
+      </div>
+
+      <div x-show="action === 'map'" x-cloak>
+        <label class="text-xs" style="color:rgba(245,247,251,0.5)">Conta existente</label>
+        <select name="account_{{ link.pk }}" class="input-glass mt-1 w-full">
+          {% for acc in existing_accounts %}
+            <option value="{{ acc.pk }}" {% if link.financial_account_id == acc.pk %}selected{% endif %}>{{ acc.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  {% empty %}
+    <div class="glass rounded-[1.5rem] p-8 text-center">
+      <p class="text-sm" style="color:rgba(245,247,251,0.5)">Nenhuma conta bancária detectada nesta conexão.</p>
+    </div>
+  {% endfor %}
+
+  {% if credit_links %}
+    <div class="glass rounded-[1.5rem] p-5">
+      <p class="text-sm font-semibold text-white mb-1">Cartões de crédito detectados</p>
+      <p class="text-xs" style="color:rgba(245,247,251,0.45)">A importação de faturas de cartão chega em breve (Fase 2). Detectados: {{ credit_links|length }}.</p>
+    </div>
+  {% endif %}
+
+  {% if links %}
+    <div class="flex justify-end">
+      <button type="submit" class="btn-primary">Salvar e importar</button>
+    </div>
+  {% endif %}
+</form>
+{% endblock %}
