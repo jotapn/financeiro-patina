@@ -46,6 +46,9 @@
         <a href="{% url 'card_list' %}" class="nav-link {% if 'card' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i> Cartões
         </a>
+        <a href="{% url 'pluggy_list' %}" class="nav-link {% if 'pluggy' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
+          <i data-lucide="link" class="w-4 h-4 shrink-0"></i> Open Finance
+        </a>
         <a href="{% url 'portfolio_dashboard' %}" class="nav-link {% if 'investment' in url_name or 'portfolio' in url_name %}is-active{% endif %} flex items-center gap-3 px-3 py-3 text-sm font-semibold">
           <i data-lucide="activity" class="w-4 h-4 shrink-0"></i> Investimentos
         </a>
